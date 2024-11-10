@@ -1,6 +1,6 @@
 import requests
 
-def search_pubmed(term, max_results=5):
+def search_pubmed(term, max_results):
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     details_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
     params = {

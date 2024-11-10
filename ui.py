@@ -2,14 +2,13 @@ import streamlit as st
 from pub_med_script import search_pubmed
 from ai_summary import summarize_content
 
-st.title('Med Sync')
-if st.button('Get Results'):
-    res = search_pubmed('cancer treatment', 3)
 
-    for i, article in enumerate(res):
-        st.write(f"{i+1}. {article['Title']}")
-        st.write(f"Link: {article['URL']}")
-        if st.button(f"Get AI summary {i+1}"):
+st.title('Med Sync')
+res = search_pubmed('cancer treatment', 10)
+
+for i, article in enumerate(res):
+    with st.expander(f"{article['Title']}"):
+        st.write(f"[Read full article]({article['URL']})")
+        if st.button(f"Get AI summary", key=i):
             st.write(summarize_content(article['URL']))
-        st.write("---")
 
