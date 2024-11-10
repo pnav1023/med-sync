@@ -1,12 +1,11 @@
-# Startup instructions
+# [Med Sync](https://med-sync.streamlit.app/)
+
+## Setup dev environment
 
 1. Clone the repository:
-   ```sh
-   git clone https://github.com/username/krutins-app.git
-   ```
 2. Navigate to the project directory:
    ```sh
-   cd krutins-app
+   cd med-sync
    ```
 3. Set up a virtual environment:
    ```sh
@@ -34,3 +33,4 @@
    ```sh
    streamlit run ui.py
    ```
+7. Open localhost
