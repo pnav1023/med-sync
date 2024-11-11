@@ -27,6 +27,7 @@ def search_pubmed(term, max_results):
         }
         details_response = requests.get(details_url, params=details_params)
         details_data = details_response.json()
+        # print(details_data)
         articles = details_data["result"]
         results = []
         for article_id in id_list:
@@ -38,6 +39,7 @@ def search_pubmed(term, max_results):
                     "PubDate": article.get('pubdate', 'N/A'),
                     "URL": f"https://pubmed.ncbi.nlm.nih.gov/{article_id}",
                     "Authors": article.get('authors', ['N/A']),
+                    "PubType": article.get('pubtype', ['N/A']),
                 })
         return results
     else:
