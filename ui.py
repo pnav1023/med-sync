@@ -76,49 +76,63 @@ try:
         if st.button("Next Page"):
             st.session_state.current_page = "Home Page"
 
-    elif st.session_state.current_page == "Home Page":
-        # Home Page Content
-        st.title("Med Sync")
-        st.write("Search for the latest articles below:")
+ elif st.session_state.current_page == "Home Page":
+    # Home Page Content
+    st.title("Med Sync")
+    st.write("Search for the latest articles below:")
 
-        ss = st.session_state
-        if "res" not in ss:
-            ss.res = []
-        if "filtered_res" not in ss:
-            ss.filtered_res = []
+    ss = st.session_state
 
-        # Prepopulate results for demonstration
-        if not ss.res:
-            ss.res = search_pubmed("cancer treatment", 10)
+    if "res" not in ss:
+        ss.res = []
+    if "filtered_res" not in ss:
+        ss.filtered_res = []
 
-        search_query = st.text_input("Search articles")
-        ss.filtered_res = [article for article in ss.res if search_query.lower() in article["Title"].lower()]
+    # Combine user inputs into a tailored search query
+    user_inputs = []
+    if ss.get("diseases_of_interest"):
+        user_inputs.append(ss.diseases_of_interest)
+    if ss.get("drugs_of_interest"):
+        user_inputs.append(ss.drugs_of_interest)
+ 
 
-        for i, article in enumerate(ss.filtered_res):
-            with st.expander(f"{article['Title']}"):
-                col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
-                with col1:
-                    st.write(f"[Read full article]({article['URL']})")
-                with col2:
-                    st.write(f"Source: {article['Source']}")
-                with col3:
-                    authors_formatted = [author["name"] for author in article["Authors"]]
-                    st.write(f"Authors: {', '.join(authors_formatted)}")
-                with col4:
-                    st.write(f"Published: {article['PubDate']}")
+    # Create a search string by joining all inputs
+    search_string = ", ".join(filter(None, user_inputs))
 
-                col5, col6 = st.columns([7, 1])
-                with col5:
-                    if st.button(f"Get AI summary", key=i):
-                        st.write(summarize_content(article["URL"]))
-                with col6:
-                    for j, pubtype in enumerate(article["PubType"]):
-                        st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+    # Prepopulate results if not already done
+    if not ss.res:
+        ss.res = search_pubmed(search_string or "latest healthcare updates", 10)
 
-    else:
-        # Handle unknown pages
-        st.error("Page not found. Returning to Welcome page.")
-        st.session_state.current_page = "Welcome"
+    # Filter results based on user search query
+    search_query = st.text_input("Search articles", value=search_string)
+    ss.filtered_res = [article for article in ss.res if search_query.lower() in article["Title"].lower()]
+
+    for i, article in enumerate(ss.filtered_res):
+        with st.expander(f"{article['Title']}"):
+            col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
+            with col1:
+                st.write(f"[Read full article]({article['URL']})")
+            with col2:
+                st.write(f"Source: {article['Source']}")
+            with col3:
+                authors_formatted = [author["name"] for author in article["Authors"]]
+                st.write(f"Authors: {', '.join(authors_formatted)}")
+            with col4:
+                st.write(f"Published: {article['PubDate']}")
+
+            col5, col6 = st.columns([7, 1])
+            with col5:
+                if st.button(f"Get AI summary", key=i):
+                    st.write(summarize_content(article["URL"]))
+            with col6:
+                for j, pubtype in enumerate(article["PubType"]):
+                    st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+
+else:
+    # Handle unknown pages
+    st.error("Page not found. Returning to Welcome page.")
+    st.session_state.current_page = "Welcome"
 
 except Exception as e:
     st.error(f"An error occurred: {e}")
+
