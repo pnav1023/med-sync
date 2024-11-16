@@ -31,6 +31,7 @@ if "res" not in st.session_state:
 if "filtered_res" not in st.session_state:
     st.session_state.filtered_res = []
 
+
 try:
     # Navigation Logic
     if st.session_state.current_page == "Welcome":
@@ -135,7 +136,7 @@ try:
                     st.session_state.res = []
 
 
-        search_query = st.text_input("Search articles", value=search_string)
+        search_query = st.text_input("Search articles")
         if st.session_state.res:
             st.session_state.filtered_res = [
                 article for article in st.session_state.res if search_query.lower() in article["Title"].lower()
