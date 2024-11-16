@@ -64,8 +64,11 @@ try:
         if st.session_state.user_salutation and st.session_state.user_firstname and st.session_state.user_lastname:
             st.write(f"Welcome {st.session_state.user_salutation} {st.session_state.user_firstname} {st.session_state.user_lastname}!")
 
-        if st.button("Next Page"):
-            st.session_state.current_page = "Input Page 2"
+    # Allow moving to next page if inputs are filled
+            if st.button("Next Page"):
+                st.session_state.current_page = "Input Page 2"
+        else:
+            st.warning("Please fill in all fields before proceeding.")
 
     elif st.session_state.current_page == "Input Page 2":
         st.title("Information Input Page")
@@ -98,9 +101,12 @@ try:
             value=st.session_state.additional_keywords,
             help="Provide any additional keywords relevant to your research."
         )
-
-        if st.button("Next Page"):
-            st.session_state.current_page = "Home Page"
+# Check if all fields are filled
+        if st.session_state.provider_role and st.session_state.specialty and st.session_state.diseases_of_interest and st.session_state.drugs_of_interest:
+            if st.button("Next Page"):
+                st.session_state.current_page = "Home Page"
+        else:
+            st.warning("Please fill in all fields before proceeding.")
 
     elif st.session_state.current_page == "Home Page":
         st.title("Med Sync")
