@@ -77,7 +77,6 @@ try:
             st.session_state.current_page = "Home Page"
 
     elif st.session_state.current_page == "Home Page":
-        # Home Page Content
         st.title("Med Sync")
         st.write("Search for the latest articles below:")
 
