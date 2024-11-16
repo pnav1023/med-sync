@@ -2,6 +2,8 @@ import streamlit as st
 from pub_med_script import search_pubmed
 from ai_summary import summarize_content
 
+
+##immaboss
 # Configure page settings
 st.set_page_config(page_title="Med Sync", layout="wide")
 
@@ -26,7 +28,7 @@ try:
         st.image(
     "welcome_image.png",
     caption="Stay in sync with Med Sync!",
-     use_column_width=True)
+    use_column_width=True)
 
         # Button to navigate to Input Page 1
         if st.button("Get Started"):
@@ -62,7 +64,7 @@ try:
     "Researcher",
     "Healthcare Administrator",
     "Student",
-     "Other Professional"]
+    "Other Professional"]
         )
         specialty = st.text_input("Enter your specialty")
         patient_age_group = st.selectbox(
@@ -84,10 +86,10 @@ try:
         if st.button("Next Page"):
             st.session_state.current_page = "Home Page"
 
- elif st.session_state.current_page == "Home Page":
-    # Home Page Content
-    st.title("Med Sync")
-    st.write("Search for the latest articles below:")
+    elif st.session_state.current_page == "Home Page":
+        # Home Page Content
+        st.title("Med Sync")
+        st.write("Search for the latest articles below:")
 
     ss = st.session_state
 
@@ -102,8 +104,7 @@ try:
         user_inputs.append(ss.diseases_of_interest)
     if ss.get("drugs_of_interest"):
         user_inputs.append(ss.drugs_of_interest)
- 
-
+        
     # Create a search string by joining all inputs
     search_string = ", ".join(filter(None, user_inputs))
 
@@ -130,7 +131,7 @@ try:
 
             col5, col6 = st.columns([7, 1])
             with col5:
-                  if st.button(f"Get AI summary", key=i):
+                if st.button(f"Get AI summary", key=i):
                     st.write(
                         summarize_content(
                             article["URL"],
@@ -146,10 +147,10 @@ try:
                 for j, pubtype in enumerate(article["PubType"]):
                     st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
 
-else:
-    # Handle unknown pages
-    st.error("Page not found. Returning to Welcome page.")
-    st.session_state.current_page = "Welcome"
+    else:
+        # Handle unknown pages
+        st.error("Page not found. Returning to Welcome page.")
+        st.session_state.current_page = "Welcome"
 
 except Exception as e:
     st.error(f"An error occurred: {e}")
