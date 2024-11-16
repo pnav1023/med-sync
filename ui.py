@@ -75,6 +75,7 @@ try:
         # Navigation to Home Page
         if st.button("Next Page"):
             st.session_state.current_page = "Home Page"
+
     elif st.session_state.current_page == "Home Page":
         # Home Page Content
         st.title("Med Sync")
