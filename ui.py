@@ -16,14 +16,17 @@ try:
         st.title("Welcome to Med Sync!")
         st.write(
             """
-            Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests. 
+            Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests.
             With Med Sync, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results and industry news.
-            
-            You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you. 
+
+            You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you.
             Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic so that you’re always on top of the latest developments in your field.
             """
         )
-        st.image("welcome_image.png", caption="Stay in sync with Med Sync!", use_column_width=True)
+        st.image(
+    "welcome_image.png",
+    caption="Stay in sync with Med Sync!",
+     use_column_width=True)
 
         # Button to navigate to Input Page 1
         if st.button("Get Started"):
@@ -38,9 +41,10 @@ try:
         user_salutation = st.text_input("Enter your salutation")
         user_firstname = st.text_input("Enter your first name")
         user_lastname = st.text_input("Enter your last name")
-        
+
         if user_salutation and user_firstname and user_lastname:
-            st.write(f"Welcome {user_salutation} {user_firstname} {user_lastname}!")
+            st.write(
+    f"Welcome {user_salutation} {user_firstname} {user_lastname}!")
 
         # Navigation to Input Page 2
         if st.button("Next Page"):
@@ -54,7 +58,11 @@ try:
         # Input fields for role, specialty, and interests
         provider_role = st.selectbox(
             "Select your role",
-            ["Clinician", "Researcher", "Healthcare Administrator", "Student", "Other Professional"]
+            ["Clinician",
+    "Researcher",
+    "Healthcare Administrator",
+    "Student",
+     "Other Professional"]
         )
         specialty = st.text_input("Enter your specialty")
         patient_age_group = st.selectbox(
