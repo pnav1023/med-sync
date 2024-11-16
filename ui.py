@@ -144,39 +144,44 @@ try:
             st.warning("No articles found. Please refine your search.")
 
         for i, article in enumerate(st.session_state.filtered_res):
-            with st.expander(f"{article['Title']}"):
-                col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
-                with col1:
-                    st.write(f"[Read full article]({article['URL']})")
-                with col2:
-                    st.write(f"Source: {article['Source']}")
-                with col3:
-                    authors_formatted = [author["name"] for author in article["Authors"]]
-                    st.write(f"Authors: {', '.join(authors_formatted)}")
-                with col4:
-                    st.write(f"Published: {article['PubDate']}")
+            
+            if isinstance(article, dict):
+                with st.expander(f"{article['Title']}"):
+                    col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
+                    with col1:
+                        st.write(f"[Read full article]({article['URL']})")
+                    with col2:
+                        st.write(f"Source: {article['Source']}")
+                    with col3:
+                        authors_formatted = [author["name"] for author in article["Authors"]]
+                        st.write(f"Authors: {', '.join(authors_formatted)}")
+                    with col4:
+                        st.write(f"Published: {article['PubDate']}")
 
-            col5, col6 = st.columns([7, 1])
-            with col5:
-                if st.button(f"Get AI summary", key=i):
-                    with st.spinner("Generating AI summary..."):
-                        try:
-                            st.write(
-                                summarize_content(
-                                    article["URL"],
-                                    provider_role=st.session_state.provider_role,
-                                    specialty=st.session_state.specialty,
-                                    age_group=st.session_state.patient_age_group,
-                                    disease_interest=st.session_state.diseases_of_interest,
-                                    drug_interest=st.session_state.drugs_of_interest,
-                                    additional_keywords=st.session_state.additional_keywords
+                col5, col6 = st.columns([7, 1])
+                with col5:
+                    if st.button(f"Get AI summary", key=i):
+                        with st.spinner("Generating AI summary..."):
+                            try:
+                                st.write(
+                                    summarize_content(
+                                        article["URL"],
+                                        provider_role=st.session_state.provider_role,
+                                        specialty=st.session_state.specialty,
+                                        age_group=st.session_state.patient_age_group,
+                                        disease_interest=st.session_state.diseases_of_interest,
+                                        drug_interest=st.session_state.drugs_of_interest,
+                                        additional_keywords=st.session_state.additional_keywords
+                                    )
                                 )
-                            )
-                        except Exception as e:
-                            st.error(F"An error occurred while fetching AI summary: {str(e)}")
-                with col6:
-                    for j, pubtype in enumerate(article["PubType"]):
-                        st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+                            except Exception as e:
+                                st.error(F"An error occurred while fetching AI summary: {str(e)}")
+                    with col6:
+                        for j, pubtype in enumerate(article["PubType"]):
+                            st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+            else:
+                st.write(f"Article {i} is NOT a dictionary: {type(article)}")
+                continue  # Skip this article if it's not a dictionary
 
     else:
         st.error("Page not found. Returning to Welcome page.")
