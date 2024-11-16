@@ -122,8 +122,18 @@ try:
 
             col5, col6 = st.columns([7, 1])
             with col5:
-                if st.button(f"Get AI summary", key=i):
-                    st.write(summarize_content(article["URL"]))
+                  if st.button(f"Get AI summary", key=i):
+                    st.write(
+                        summarize_content(
+                            article["URL"],
+                            provider_role=ss.get("provider_role", "healthcare professional"),
+                            specialty=ss.get("specialty", "general"),
+                            age_group=ss.get("patient_age_group", "all ages"),
+                            disease_interest=ss.get("diseases_of_interest", ""),
+                            drug_interest=ss.get("drugs_of_interest", ""),
+                            additional_keywords=ss.get("additional_keywords", [])
+                        )
+                    )
             with col6:
                 for j, pubtype in enumerate(article["PubType"]):
                     st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
