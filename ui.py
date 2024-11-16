@@ -46,7 +46,7 @@ try:
         if st.button("Get Started"):
             st.session_state.current_page = "Input Page 1"
 
-    elif st.session_state.current_page == "Input Page 1":
+    if st.session_state.current_page == "Input Page 1":
         st.title("Personal Input Page")
         st.write("Provide inputs below:")
 
@@ -70,7 +70,7 @@ try:
         else:
             st.warning("Please fill in all fields before proceeding.")
 
-    elif st.session_state.current_page == "Input Page 2":
+    if st.session_state.current_page == "Input Page 2":
         st.title("Information Input Page")
         st.write("Provide your information below:")
 
@@ -108,7 +108,7 @@ try:
         else:
             st.warning("Please fill in all fields before proceeding.")
 
-    elif st.session_state.current_page == "Home Page":
+    if st.session_state.current_page == "Home Page":
         st.title("Med Sync")
         st.write("Search for the latest articles below:")
 
@@ -135,14 +135,14 @@ try:
                     st.session_state.res = []
 
 
-        search_query = st.text_input("Search articles", value=search_string)
+        search_query = st.text_input("Search articles")
         if st.session_state.res:
             st.session_state.filtered_res = [
                 article for article in st.session_state.res if search_query.lower() in article["Title"].lower()
             ]
         else:
             st.warning("No articles found. Please refine your search.")
-
+        
         for i, article in enumerate(st.session_state.filtered_res):
             
             if isinstance(article, dict):
@@ -182,10 +182,6 @@ try:
             else:
                 st.write(f"Article {i} is NOT a dictionary: {type(article)}")
                 continue  # Skip this article if it's not a dictionary
-
-    else:
-        st.error("Page not found. Returning to Welcome page.")
-        st.session_state.current_page = "Welcome"
 
 except Exception as e:
     st.error(f"An error occurred: {e}")
