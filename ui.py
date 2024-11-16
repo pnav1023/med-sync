@@ -25,10 +25,7 @@ try:
             Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic so that you’re always on top of the latest developments in your field.
             """
         )
-        st.image(
-    "welcome_image.png",
-    caption="Stay in sync with Med Sync!",
-    use_column_width=True)
+    
 
         # Button to navigate to Input Page 1
         if st.button("Get Started"):
