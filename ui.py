@@ -18,7 +18,7 @@ try:
             """
             Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests. 
             With Med Sync, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results and industry news.
-            
+
             You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you. 
             Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic so that you’re always on top of the latest developments in your field.
             """
@@ -76,73 +76,73 @@ try:
         if st.button("Next Page"):
             st.session_state.current_page = "Home Page"
 
- elif st.session_state.current_page == "Home Page":
-    # Home Page Content
-    st.title("Med Sync")
-    st.write("Search for the latest articles below:")
+    elif st.session_state.current_page == "Home Page":
+        # Home Page Content
+        st.title("Med Sync")
+        st.write("Search for the latest articles below:")
 
-    ss = st.session_state
+        ss = st.session_state
 
-    if "res" not in ss:
-        ss.res = []
-    if "filtered_res" not in ss:
-        ss.filtered_res = []
+        if "res" not in ss:
+            ss.res = []
+        if "filtered_res" not in ss:
+            ss.filtered_res = []
 
-    # Combine user inputs into a tailored search query
-    user_inputs = []
-    if ss.get("diseases_of_interest"):
-        user_inputs.append(ss.diseases_of_interest)
-    if ss.get("drugs_of_interest"):
-        user_inputs.append(ss.drugs_of_interest)
- 
+        # Combine user inputs into a tailored search query
+        user_inputs = []
+        if ss.get("diseases_of_interest"):
+            user_inputs.append(ss.diseases_of_interest)
+        if ss.get("drugs_of_interest"):
+            user_inputs.append(ss.drugs_of_interest)
 
-    # Create a search string by joining all inputs
-    search_string = ", ".join(filter(None, user_inputs))
+        # Create a search string by joining all inputs
+        search_string = ", ".join(filter(None, user_inputs))
 
-    # Prepopulate results if not already done
-    if not ss.res:
-        ss.res = search_pubmed(search_string or "latest healthcare updates", 10)
+        # Prepopulate results if not already done
+        if not ss.res:
+            ss.res = search_pubmed(search_string or "latest healthcare updates", 10)
 
-    # Filter results based on user search query
-    search_query = st.text_input("Search articles", value=search_string)
-    ss.filtered_res = [article for article in ss.res if search_query.lower() in article["Title"].lower()]
+        # Filter results based on user search query
+        search_query = st.text_input("Search articles", value=search_string)
+        ss.filtered_res = [article for article in ss.res if search_query.lower() in article["Title"].lower()]
 
-    for i, article in enumerate(ss.filtered_res):
-        with st.expander(f"{article['Title']}"):
-            col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
-            with col1:
-                st.write(f"[Read full article]({article['URL']})")
-            with col2:
-                st.write(f"Source: {article['Source']}")
-            with col3:
-                authors_formatted = [author["name"] for author in article["Authors"]]
-                st.write(f"Authors: {', '.join(authors_formatted)}")
-            with col4:
-                st.write(f"Published: {article['PubDate']}")
+        for i, article in enumerate(ss.filtered_res):
+            with st.expander(f"{article['Title']}"):
+                col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
+                with col1:
+                    st.write(f"[Read full article]({article['URL']})")
+                with col2:
+                    st.write(f"Source: {article['Source']}")
+                with col3:
+                    authors_formatted = [author["name"] for author in article["Authors"]]
+                    st.write(f"Authors: {', '.join(authors_formatted)}")
+                with col4:
+                    st.write(f"Published: {article['PubDate']}")
 
-            col5, col6 = st.columns([7, 1])
-            with col5:
-                  if st.button(f"Get AI summary", key=i):
-                    st.write(
-                        summarize_content(
-                            article["URL"],
-                            provider_role=ss.get("provider_role", "healthcare professional"),
-                            specialty=ss.get("specialty", "general"),
-                            age_group=ss.get("patient_age_group", "all ages"),
-                            disease_interest=ss.get("diseases_of_interest", ""),
-                            drug_interest=ss.get("drugs_of_interest", ""),
-                            additional_keywords=ss.get("additional_keywords", [])
+                col5, col6 = st.columns([7, 1])
+                with col5:
+                    if st.button(f"Get AI summary", key=i):
+                        st.write(
+                            summarize_content(
+                                article["URL"],
+                                provider_role=ss.get("provider_role", "healthcare professional"),
+                                specialty=ss.get("specialty", "general"),
+                                age_group=ss.get("patient_age_group", "all ages"),
+                                disease_interest=ss.get("diseases_of_interest", ""),
+                                drug_interest=ss.get("drugs_of_interest", ""),
+                                additional_keywords=ss.get("additional_keywords", [])
+                            )
                         )
-                    )
-            with col6:
-                for j, pubtype in enumerate(article["PubType"]):
-                    st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+                with col6:
+                    for j, pubtype in enumerate(article["PubType"]):
+                        st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
 
-else:
-    # Handle unknown pages
-    st.error("Page not found. Returning to Welcome page.")
-    st.session_state.current_page = "Welcome"
+    else:
+        # Handle unknown pages
+        st.error("Page not found. Returning to Welcome page.")
+        st.session_state.current_page = "Welcome"
 
 except Exception as e:
     st.error(f"An error occurred: {e}")
+
 
