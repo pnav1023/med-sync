@@ -21,11 +21,7 @@ try:
             Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests.
             With Med Sync, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results and industry news.
 
-<<<<<<< HEAD
-            You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you.
-=======
             You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you. 
->>>>>>> 2b7788773c6e3693e007f17be90cf4d029cfe29c
             Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic so that you’re always on top of the latest developments in your field.
             """
         )
@@ -91,10 +87,6 @@ try:
             st.session_state.current_page = "Home Page"
 
     elif st.session_state.current_page == "Home Page":
-<<<<<<< HEAD
-        # Home Page Content
-=======
->>>>>>> 2b7788773c6e3693e007f17be90cf4d029cfe29c
         st.title("Med Sync")
         st.write("Search for the latest articles below:")
 
@@ -105,17 +97,6 @@ try:
         if "filtered_res" not in ss:
             ss.filtered_res = []
 
-<<<<<<< HEAD
-    # Combine user inputs into a tailored search query
-    user_inputs = []
-    if ss.get("diseases_of_interest"):
-        user_inputs.append(ss.diseases_of_interest)
-    if ss.get("drugs_of_interest"):
-        user_inputs.append(ss.drugs_of_interest)
-        
-    # Create a search string by joining all inputs
-    search_string = ", ".join(filter(None, user_inputs))
-=======
         # Combine user inputs into a tailored search query
         user_inputs = []
         if ss.get("diseases_of_interest"):
@@ -125,7 +106,6 @@ try:
 
         # Create a search string by joining all inputs
         search_string = ", ".join(filter(None, user_inputs))
->>>>>>> 2b7788773c6e3693e007f17be90cf4d029cfe29c
 
         # Prepopulate results if not already done
         if not ss.res:
@@ -148,7 +128,6 @@ try:
                 with col4:
                     st.write(f"Published: {article['PubDate']}")
 
-<<<<<<< HEAD
             col5, col6 = st.columns([7, 1])
             with col5:
                 if st.button(f"Get AI summary", key=i):
@@ -161,22 +140,9 @@ try:
                             disease_interest=ss.get("diseases_of_interest", ""),
                             drug_interest=ss.get("drugs_of_interest", ""),
                             additional_keywords=ss.get("additional_keywords", [])
-=======
-                col5, col6 = st.columns([7, 1])
-                with col5:
-                    if st.button(f"Get AI summary", key=i):
-                        st.write(
-                            summarize_content(
-                                article["URL"],
-                                provider_role=ss.get("provider_role", "healthcare professional"),
-                                specialty=ss.get("specialty", "general"),
-                                age_group=ss.get("patient_age_group", "all ages"),
-                                disease_interest=ss.get("diseases_of_interest", ""),
-                                drug_interest=ss.get("drugs_of_interest", ""),
-                                additional_keywords=ss.get("additional_keywords", [])
-                            )
->>>>>>> 2b7788773c6e3693e007f17be90cf4d029cfe29c
                         )
+                        
+                    )
                 with col6:
                     for j, pubtype in enumerate(article["PubType"]):
                         st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
