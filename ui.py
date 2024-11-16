@@ -121,16 +121,27 @@ try:
 
         # Create a search string
         search_string = ", ".join(filter(None, user_inputs))
+        if not search_string:
+            st.warning("No search keywords provided. Showing general updates.")
+            search_string = "latest healthcare updates"
 
-        # Prepopulate results if not already done
-        if not st.session_state.res:
-            st.session_state.res = search_pubmed(search_string or "latest healthcare updates", 10)
+        with st.spinner("Fetching articles..."):
+            try:
+                if not st.session_state.res:
+            # Attempt to fetch articles from PubMed
+                    st.session_state.res = search_pubmed(search_string or "latest healthcare updates", 10)
+            except Exception as e:
+                    st.error(f"An error occurred while fetching articles: {str(e)}. Please try again later.")
+                    st.session_state.res = []
 
-        # Filter results based on user search query
+
         search_query = st.text_input("Search articles", value=search_string)
-        st.session_state.filtered_res = [
-            article for article in st.session_state.res if search_query.lower() in article["Title"].lower()
-        ]
+        if st.session_state.res:
+            st.session_state.filtered_res = [
+                article for article in st.session_state.res if search_query.lower() in article["Title"].lower()
+            ]
+        else:
+            st.warning("No articles found. Please refine your search.")
 
         for i, article in enumerate(st.session_state.filtered_res):
             with st.expander(f"{article['Title']}"):
@@ -148,17 +159,21 @@ try:
             col5, col6 = st.columns([7, 1])
             with col5:
                 if st.button(f"Get AI summary", key=i):
-                    st.write(
-                        summarize_content(
-                            article["URL"],
-                            provider_role=st.session_state.provider_role,
-                            specialty=st.session_state.specialty,
-                            age_group=st.session_state.patient_age_group,
-                            disease_interest=st.session_state.diseases_of_interest,
-                            drug_interest=st.session_state.drugs_of_interest,
-                            additional_keywords=st.session_state.additional_keywords
-                        )
-                    )
+                    with st.spinner("Generating AI summary..."):
+                        try:
+                            st.write(
+                                summarize_content(
+                                    article["URL"],
+                                    provider_role=st.session_state.provider_role,
+                                    specialty=st.session_state.specialty,
+                                    age_group=st.session_state.patient_age_group,
+                                    disease_interest=st.session_state.diseases_of_interest,
+                                    drug_interest=st.session_state.drugs_of_interest,
+                                    additional_keywords=st.session_state.additional_keywords
+                                )
+                            )
+                        except Exception as e:
+                            st.error(F"An error occurred while fetching AI summary: {str(e)}")
                 with col6:
                     for j, pubtype in enumerate(article["PubType"]):
                         st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
