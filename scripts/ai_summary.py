@@ -21,7 +21,7 @@ def extract_main_content(html):
     content = soup.get_text()
     return content
 
-def summarize_content(url, provider_role, specialty, age_group, disease_interest, drug_interest, additional_keywords):
+def summarize_content(url):#, provider_role, specialty, age_group, disease_interest, drug_interest, additional_keywords):
     # Use OpenAI API to summarize
     content = extract_main_content(fetch_url_content(url)) 
 
@@ -30,17 +30,17 @@ def summarize_content(url, provider_role, specialty, age_group, disease_interest
     client = OpenAI(api_key=api_key)
 
     # Build user-specific context for summarization
-    user_context = (
-        f"You are summarizing this for a {provider_role}. "
-        f"The specialty of interest is {specialty}. "
-        f"Focus on patients in the {age_group} age group. "
-        f"Highlight key findings about the disease of interest: {disease_interest}. "
-        f"Discuss findings related to drug interest: {drug_interest}. "
-    )
+    # user_context = (
+    #     f"You are summarizing this for a {provider_role}. "
+    #     f"The specialty of interest is {specialty}. "
+    #     f"Focus on patients in the {age_group} age group. "
+    #     f"Highlight key findings about the disease of interest: {disease_interest}. "
+    #     f"Discuss findings related to drug interest: {drug_interest}. "
+    # )
     
-    if additional_keywords:
-        keywords_str = ", ".join(additional_keywords)
-        user_context += f"Additional context keywords: {keywords_str}."
+    # if additional_keywords:
+    #     keywords_str = ", ".join(additional_keywords)
+    #     user_context += f"Additional context keywords: {keywords_str}."
 
     completion = client.chat.completions.create(
         model="gpt-4o",
@@ -48,7 +48,7 @@ def summarize_content(url, provider_role, specialty, age_group, disease_interest
             {"role": "system", "content": "You are an assistant that summarizes research papers efficiently."},
             {
                 "role": "user",
-                "content": f"{user_context} Here is the content of a research paper that I would like summarized: {content}."
+                "content": f"Here is the content of a research paper that I would like summarized: {content}." # add user context later
             }
         ]
     )

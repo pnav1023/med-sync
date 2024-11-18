@@ -1,6 +1,6 @@
 import streamlit as st
-from pub_med_script import search_pubmed
-from ai_summary import summarize_content
+from scripts.pub_med_script import search_pubmed
+from scripts.ai_summary import summarize_content
 
 # Configure page settings
 st.set_page_config(page_title="Med Sync", layout="wide")
