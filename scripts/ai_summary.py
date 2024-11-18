@@ -27,7 +27,7 @@ def summarize_content(url):#, provider_role, specialty, age_group, disease_inter
 
     api_key = os.getenv("OPENAI_API_KEY")
 
-    client = OpenAI(api_key=api_key)
+    client = OpenAI() #api_key=api_key
 
     # Build user-specific context for summarization
     # user_context = (
