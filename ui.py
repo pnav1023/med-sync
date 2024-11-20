@@ -1,38 +1,78 @@
 import streamlit as st
 from pub_med_script import search_pubmed
 from ai_summary import summarize_content
+import pandas as pd
+import feedparser
+from pytrials.client import ClinicalTrials
+import urllib.request
+from html.parser import HTMLParser
 
 # Configure page settings
 st.set_page_config(page_title="Med Sync", layout="wide")
 
-# Initialize session state for navigation and inputs
+# Create a class to strip HTML tags
+class HTMLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.data = []
+
+    def handle_data(self, data):
+        self.data.append(data)
+
+    def get_data(self):
+        return ''.join(self.data)
+
+def strip_html(html):
+    stripper = HTMLStripper()
+    stripper.feed(html)
+    return stripper.get_data()
+
+
+# Helper function to fetch and parse RSS feeds
+def fetch_rss_feed(rss_url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    try:
+        request = urllib.request.Request(rss_url, headers=headers)
+        with urllib.request.urlopen(request) as response:
+            rss_data = response.read()
+        feed = feedparser.parse(rss_data)
+        if feed.bozo:
+            st.error("Error fetching the RSS feed.")
+            return []
+        return feed.entries
+    except Exception as e:
+        st.error(f"An error occurred while fetching the RSS feed: {e}")
+        return []
+
+# Helper function to fetch clinical trials
+def fetch_clinical_trials(drug, disease):
+    ct = ClinicalTrials()
+    search_expr = f"{drug}+{disease}"
+    try:
+        fields = ct.get_study_fields(
+            search_expr=search_expr,
+            fields=["NCT Number", "Conditions", "Study Title"],
+            max_studies=15,
+            fmt="csv",
+        )
+        return pd.DataFrame.from_records(fields[1:], columns=fields[0])
+    except Exception as e:
+        st.error(f"An error occurred while fetching clinical trials: {e}")
+        return pd.DataFrame()
+
+# Initialize session state
 if "current_page" not in st.session_state:
     st.session_state.current_page = "Welcome"
-if "user_salutation" not in st.session_state:
-    st.session_state.user_salutation = ""
-if "user_firstname" not in st.session_state:
-    st.session_state.user_firstname = ""
-if "user_lastname" not in st.session_state:
-    st.session_state.user_lastname = ""
-if "diseases_of_interest" not in st.session_state:
-    st.session_state.diseases_of_interest = ""
-if "drugs_of_interest" not in st.session_state:
-    st.session_state.drugs_of_interest = ""
-if "additional_keywords" not in st.session_state:
-    st.session_state.additional_keywords = ""
-if "provider_role" not in st.session_state:
-    st.session_state.provider_role = "Clinician"
-if "specialty" not in st.session_state:
-    st.session_state.specialty = ""
-if "patient_age_group" not in st.session_state:
-    st.session_state.patient_age_group = "0-18"
-if "res" not in st.session_state:
-    st.session_state.res = []
-if "filtered_res" not in st.session_state:
-    st.session_state.filtered_res = []
+if "rss_entries" not in st.session_state:
+    st.session_state.rss_entries = []
+if "clinical_trials" not in st.session_state:
+    st.session_state.clinical_trials = pd.DataFrame()
+if "academic_research" not in st.session_state:
+    st.session_state.academic_research = []
 
 try:
-    # Navigation Logic
     if st.session_state.current_page == "Welcome":
         st.title("Welcome to Med Sync!")
         st.write("""
@@ -44,144 +84,79 @@ try:
         """)
 
         if st.button("Get Started"):
-            st.session_state.current_page = "Input Page 1"
+            st.session_state.current_page = "Input Page"
 
-    if st.session_state.current_page == "Input Page 1":
+    elif st.session_state.current_page == "Input Page":
         st.title("Personal Input Page")
-        st.write("Provide inputs below:")
-
-        # Input fields with session state
-        st.session_state.user_salutation = st.text_input(
-            "Enter your salutation", value=st.session_state.user_salutation
-        )
-        st.session_state.user_firstname = st.text_input(
-            "Enter your first name", value=st.session_state.user_firstname
-        )
-        st.session_state.user_lastname = st.text_input(
-            "Enter your last name", value=st.session_state.user_lastname
-        )
-
-        if st.session_state.user_salutation and st.session_state.user_firstname and st.session_state.user_lastname:
-            st.write(f"Welcome {st.session_state.user_salutation} {st.session_state.user_firstname} {st.session_state.user_lastname}!")
-
-    # Allow moving to next page if inputs are filled
-            if st.button("Next Page"):
-                st.session_state.current_page = "Input Page 2"
-        else:
-            st.warning("Please fill in all fields before proceeding.")
-
-    if st.session_state.current_page == "Input Page 2":
-        st.title("Information Input Page")
-        st.write("Provide your information below:")
-
-        # Input fields with session state
-        st.session_state.provider_role = st.selectbox(
-            "Select your role",
-            ["Clinician", "Researcher", "Healthcare Administrator", "Student", "Other Professional"],
-            index=["Clinician", "Researcher", "Healthcare Administrator", "Student", "Other Professional"].index(
-                st.session_state.provider_role
-            )
-        )
-        st.session_state.specialty = st.text_input(
-            "Enter your specialty", value=st.session_state.specialty
-        )
-        st.session_state.patient_age_group = st.selectbox(
-            "Select patient's age group",
-            ["0-18", "19-35", "36-50", "51-70", "71+"],
-            index=["0-18", "19-35", "36-50", "51-70", "71+"].index(st.session_state.patient_age_group)
-        )
-        st.session_state.diseases_of_interest = st.text_input(
-            "Enter diseases of interest (separate by commas if multiple)", value=st.session_state.diseases_of_interest
-        )
-        st.session_state.drugs_of_interest = st.text_input(
-            "Enter drugs of interest (separate by commas if multiple)", value=st.session_state.drugs_of_interest
-        )
-        st.session_state.additional_keywords = st.text_area(
-            "Enter additional keywords (separate by commas if multiple)",
-            value=st.session_state.additional_keywords,
-            help="Provide any additional keywords relevant to your research."
-        )
-# Check if all fields are filled
-        if st.session_state.provider_role and st.session_state.specialty and st.session_state.diseases_of_interest and st.session_state.drugs_of_interest:
-            if st.button("Next Page"):
-                st.session_state.current_page = "Home Page"
-        else:
-            st.warning("Please fill in all fields before proceeding.")
-
-    if st.session_state.current_page == "Home Page":
-        st.title("Med Sync")
-        st.write("Search for the latest articles below:")
-
-        # Combine user inputs into a tailored search query
-        user_inputs = []
-        if st.session_state.diseases_of_interest:
-            user_inputs.append(st.session_state.diseases_of_interest)
-        if st.session_state.drugs_of_interest:
-            user_inputs.append(st.session_state.drugs_of_interest)
-
-        # Create a search string
-        search_string = ", ".join(filter(None, user_inputs))
-        if not search_string:
-            st.warning("No search keywords provided. Showing general updates.")
-            search_string = "latest healthcare updates"
-
-        with st.spinner("Fetching articles..."):
-            try:
-                if not st.session_state.res:
-            # Attempt to fetch articles from PubMed
-                    st.session_state.res = search_pubmed(search_string or "latest healthcare updates", 10)
-            except Exception as e:
-                    st.error(f"An error occurred while fetching articles: {str(e)}. Please try again later.")
-                    st.session_state.res = []
-
-
-        search_query = st.text_input("Search articles")
-        if st.session_state.res:
-            st.session_state.filtered_res = [
-                article for article in st.session_state.res if search_query.lower() in article["Title"].lower()
-            ]
-        else:
-            st.warning("No articles found. Please refine your search.")
+        st.session_state.diseases_of_interest = st.text_input("Enter diseases of interest:")
+        st.session_state.drugs_of_interest = st.text_input("Enter drugs of interest:")
         
-        for i, article in enumerate(st.session_state.filtered_res):
-            
-            if isinstance(article, dict):
-                with st.expander(f"{article['Title']}"):
-                    col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
-                    with col1:
-                        st.write(f"[Read full article]({article['URL']})")
-                    with col2:
-                        st.write(f"Source: {article['Source']}")
-                    with col3:
-                        authors_formatted = [author["name"] for author in article["Authors"]]
-                        st.write(f"Authors: {', '.join(authors_formatted)}")
-                    with col4:
-                        st.write(f"Published: {article['PubDate']}")
+        if st.button("Fetch Updates"):
+            with st.spinner("Fetching updates..."):
+                # Fetch Academic Research
+                search_string = f"{st.session_state.diseases_of_interest}, {st.session_state.drugs_of_interest}"
+                st.session_state.academic_research = search_pubmed(search_string, 10)
 
-                col5, col6 = st.columns([7, 1])
-                with col5:
-                    if st.button(f"Get AI summary", key=i):
-                        with st.spinner("Generating AI summary..."):
-                            try:
-                                st.write(
-                                    summarize_content(
-                                        article["URL"],
-                                        provider_role=st.session_state.provider_role,
-                                        specialty=st.session_state.specialty,
-                                        age_group=st.session_state.patient_age_group,
-                                        disease_interest=st.session_state.diseases_of_interest,
-                                        drug_interest=st.session_state.drugs_of_interest,
-                                        additional_keywords=st.session_state.additional_keywords
-                                    )
-                                )
-                            except Exception as e:
-                                st.error(F"An error occurred while fetching AI summary: {str(e)}")
-                    with col6:
-                        for j, pubtype in enumerate(article["PubType"]):
-                            st.button(f"{pubtype}", key=f"{i}-{j}", disabled=True)
+                # Fetch Clinical Trials
+                drug = st.session_state.drugs_of_interest.split(",")[0] if st.session_state.drugs_of_interest else ""
+                disease = st.session_state.diseases_of_interest.split(",")[0] if st.session_state.diseases_of_interest else ""
+                st.session_state.clinical_trials = fetch_clinical_trials(drug, disease)
+
+                # Fetch Industry News
+                rss_url = "https://www.medpagetoday.com/rss/headlines.xml"
+                st.session_state.rss_entries = fetch_rss_feed(rss_url)
+
+            st.session_state.current_page = "Results Page"
+
+    elif st.session_state.current_page == "Results Page":
+        st.title("Results")
+        st.write("View the latest updates tailored to your interests.")
+
+        tabs = st.tabs(["Academic Research", "Clinical Trials", "Industry News"])
+
+        # Academic Research Tab
+        with tabs[0]:
+            st.header("Academic Research")
+            for article in st.session_state.academic_research:
+                with st.expander(article['Title']):
+                    st.write(f"[Read More]({article['URL']})")
+
+        # Clinical Trials Tab
+        with tabs[1]:
+            st.header("Clinical Trials")
+            if not st.session_state.clinical_trials.empty:
+                st.dataframe(st.session_state.clinical_trials)
             else:
-                st.write(f"Article {i} is NOT a dictionary: {type(article)}")
-                continue  # Skip this article if it's not a dictionary
+                st.write("No clinical trials found.")
+
+        # Industry News Tab
+        with tabs[2]:
+            st.header("Industry News")
+            
+            # Get user inputs for filtering
+            diseases_of_interest = st.session_state.diseases_of_interest.lower()
+            drugs_of_interest = st.session_state.drugs_of_interest.lower()
+
+            # Filter RSS entries based on diseases and drugs
+            filtered_rss_entries = [
+                entry for entry in st.session_state.rss_entries
+                if diseases_of_interest in entry.get('title', '').lower() or
+                diseases_of_interest in entry.get('summary', '').lower() or
+                drugs_of_interest in entry.get('title', '').lower() or
+                drugs_of_interest in entry.get('summary', '').lower()
+            ]
+
+        # Display filtered results or a message if no matches
+        if filtered_rss_entries:
+            for entry in filtered_rss_entries:
+                with st.expander(entry.get('title', 'No Title')):
+                    summary_html = entry.get('summary', 'No Summary')
+                    plain_summary = strip_html(summary_html)
+                    st.write(plain_summary)
+                    st.write(f"[Read More]({entry.get('link', '#')})")
+        else:
+            st.write("No relevant news articles found based on your input.")
+
 
 except Exception as e:
-    st.error(f"An error occurred: {e}")
+    st.error(f"An unexpected error occurred: {e}")
