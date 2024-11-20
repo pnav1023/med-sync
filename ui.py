@@ -6,6 +6,8 @@ import feedparser
 from pytrials.client import ClinicalTrials
 import urllib.request
 from html.parser import HTMLParser
+from rss import fetch_rss_feed
+from trials import fetch_clinical_trials
 
 # Configure page settings
 st.set_page_config(page_title="Med Sync", layout="wide")
@@ -27,40 +29,6 @@ def strip_html(html):
     stripper.feed(html)
     return stripper.get_data()
 
-
-# Helper function to fetch and parse RSS feeds
-def fetch_rss_feed(rss_url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    try:
-        request = urllib.request.Request(rss_url, headers=headers)
-        with urllib.request.urlopen(request) as response:
-            rss_data = response.read()
-        feed = feedparser.parse(rss_data)
-        if feed.bozo:
-            st.error("Error fetching the RSS feed.")
-            return []
-        return feed.entries
-    except Exception as e:
-        st.error(f"An error occurred while fetching the RSS feed: {e}")
-        return []
-
-# Helper function to fetch clinical trials
-def fetch_clinical_trials(drug, disease):
-    ct = ClinicalTrials()
-    search_expr = f"{drug}+{disease}"
-    try:
-        fields = ct.get_study_fields(
-            search_expr=search_expr,
-            fields=["NCT Number", "Conditions", "Study Title"],
-            max_studies=15,
-            fmt="csv",
-        )
-        return pd.DataFrame.from_records(fields[1:], columns=fields[0])
-    except Exception as e:
-        st.error(f"An error occurred while fetching clinical trials: {e}")
-        return pd.DataFrame()
 
 # Initialize session state
 if "current_page" not in st.session_state:
