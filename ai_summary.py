@@ -39,9 +39,9 @@ def summarize_content(url, provider_role, specialty, age_group, disease_interest
         user_context = (
             f"You are summarizing this for a {provider_role}. "
             f"The specialty of interest is {specialty}. "
-            f"Focus on patients in the {age_group} age group. "
-            f"Highlight key findings about the disease of interest: {disease_interest}. "
-            f"Discuss findings related to drug interest: {drug_interest}. "
+            f"Focus on patients in the {age_group} age group if possible. "
+            f"Highlight key findings about the disease of interest if possible: {disease_interest}. "
+            f"Discuss findings related to drug interest if possible: {drug_interest}. "
         )
         
         # Append additional context keywords if provided

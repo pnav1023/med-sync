@@ -39,6 +39,12 @@ if "clinical_trials" not in st.session_state:
     st.session_state.clinical_trials = pd.DataFrame()
 if "academic_research" not in st.session_state:
     st.session_state.academic_research = []
+if "rss2_entries" not in st.session_state:
+    st.session_state.rss2_entries = []
+if "rss3_entries" not in st.session_state:
+    st.session_state.rss3_entries = []
+if "rss4_entries" not in st.session_state:
+    st.session_state.rss4_entries = []
 
 try:
     if st.session_state.current_page == "Welcome":
@@ -73,6 +79,20 @@ try:
                 # Fetch Industry News
                 rss_url = "https://www.medpagetoday.com/rss/headlines.xml"
                 st.session_state.rss_entries = fetch_rss_feed(rss_url)
+                
+                
+                ##fetch regulatory news
+                rss_url2 = "https://www.fiercehealthcare.com/rss/regulatory/xml"
+                st.session_state.rss2_entries = fetch_rss_feed(rss_url2) 
+                
+                
+                ##fetch provider news
+                rss_url3 = "https://www.fiercehealthcare.com/rss/providers/xml"
+                st.session_state.rss3_entries = fetch_rss_feed(rss_url3)
+                
+                ##fetch drug news
+                rss_url4 = "https://www.fiercepharma.com/rss/xml"
+                st.session_state.rss4_entries = fetch_rss_feed(rss_url4)
 
             st.session_state.current_page = "Results Page"
 
@@ -80,7 +100,7 @@ try:
         st.title("Results")
         st.write("View the latest updates tailored to your interests.")
 
-        tabs = st.tabs(["Academic Research", "Clinical Trials", "Industry News"])
+        tabs = st.tabs(["Academic Research", "Clinical Trials", "Clinical News", "Regulatory News", "Provider News", "Drug News"])
 
         # Academic Research Tab
         with tabs[0]:
@@ -99,7 +119,7 @@ try:
 
         # Industry News Tab
         with tabs[2]:
-            st.header("Industry News")
+            st.header("Clinical News")
             
             # Get user inputs for filtering
             diseases_of_interest = st.session_state.diseases_of_interest.lower()
@@ -114,16 +134,102 @@ try:
                 drugs_of_interest in entry.get('summary', '').lower()
             ]
 
-        # Display filtered results or a message if no matches
-        if filtered_rss_entries:
-            for entry in filtered_rss_entries:
-                with st.expander(entry.get('title', 'No Title')):
-                    summary_html = entry.get('summary', 'No Summary')
-                    plain_summary = strip_html(summary_html)
-                    st.write(plain_summary)
-                    st.write(f"[Read More]({entry.get('link', '#')})")
-        else:
-            st.write("No relevant news articles found based on your input.")
+            # Display filtered results or a message if no matches
+            if filtered_rss_entries:
+                for entry in filtered_rss_entries:
+                    with st.expander(entry.get('title', 'No Title')):
+                        summary_html = entry.get('summary', 'No Summary')
+                        plain_summary = strip_html(summary_html)
+                        st.write(plain_summary)
+                        st.write(f"[Read More]({entry.get('link', '#')})")
+            else:
+                st.write("No relevant news articles found based on your input.")
+            
+        
+        
+        # Industry News Tab
+        with tabs[3]:
+            st.header("Regulatory News")
+            
+            # Get user inputs for filtering
+            diseases_of_interest = st.session_state.diseases_of_interest.lower()
+            drugs_of_interest = st.session_state.drugs_of_interest.lower()
+
+            # Filter RSS entries based on diseases and drugs
+            filtered_rss2_entries = [
+                entry for entry in st.session_state.rss2_entries
+                if diseases_of_interest in entry.get('title', '').lower() or
+                diseases_of_interest in entry.get('summary', '').lower() or
+                drugs_of_interest in entry.get('title', '').lower() or
+                drugs_of_interest in entry.get('summary', '').lower()
+            ]
+
+            # Display filtered results or a message if no matches
+            if filtered_rss2_entries:
+                for entry in filtered_rss2_entries:
+                    with st.expander(entry.get('title', 'No Title')):
+                        summary_html = entry.get('summary', 'No Summary')
+                        plain_summary = strip_html(summary_html)
+                        st.write(plain_summary)
+                        st.write(f"[Read More]({entry.get('link', '#')})")
+            else:
+                st.write("No relevant news articles found based on your input.")
+        
+        # Industry News Tab
+        with tabs[4]:
+            st.header("Provider News")
+            
+            # Get user inputs for filtering
+            diseases_of_interest = st.session_state.diseases_of_interest.lower()
+            drugs_of_interest = st.session_state.drugs_of_interest.lower()
+
+            # Filter RSS entries based on diseases and drugs
+            filtered_rss3_entries = [
+                entry for entry in st.session_state.rss3_entries
+                if diseases_of_interest in entry.get('title', '').lower() or
+                diseases_of_interest in entry.get('summary', '').lower() or
+                drugs_of_interest in entry.get('title', '').lower() or
+                drugs_of_interest in entry.get('summary', '').lower()
+            ]
+
+            # Display filtered results or a message if no matches
+            if filtered_rss3_entries:
+                for entry in filtered_rss3_entries:
+                    with st.expander(entry.get('title', 'No Title')):
+                        summary_html = entry.get('summary', 'No Summary')
+                        plain_summary = strip_html(summary_html)
+                        st.write(plain_summary)
+                        st.write(f"[Read More]({entry.get('link', '#')})")
+            else:
+                st.write("No relevant news articles found based on your input.")
+        
+        # Industry News Tab
+        with tabs[5]:
+            st.header("Drug News")
+            
+            # Get user inputs for filtering
+            diseases_of_interest = st.session_state.diseases_of_interest.lower()
+            drugs_of_interest = st.session_state.drugs_of_interest.lower()
+
+            # Filter RSS entries based on diseases and drugs
+            filtered_rss4_entries = [
+                entry for entry in st.session_state.rss4_entries
+                if diseases_of_interest in entry.get('title', '').lower() or
+                diseases_of_interest in entry.get('summary', '').lower() or
+                drugs_of_interest in entry.get('title', '').lower() or
+                drugs_of_interest in entry.get('summary', '').lower()
+            ]
+
+            # Display filtered results or a message if no matches
+            if filtered_rss4_entries:
+                for entry in filtered_rss4_entries:
+                    with st.expander(entry.get('title', 'No Title')):
+                        summary_html = entry.get('summary', 'No Summary')
+                        plain_summary = strip_html(summary_html)
+                        st.write(plain_summary)
+                        st.write(f"[Read More]({entry.get('link', '#')})")
+            else:
+                st.write("No relevant news articles found based on your input.")
 
 
 except Exception as e:
