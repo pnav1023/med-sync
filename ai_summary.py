@@ -1,9 +1,10 @@
-from openai import OpenAI
+import openai
 import os
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import requests
 
+# Load environment variables
 load_dotenv()
 
 def fetch_url_content(url):
@@ -17,49 +18,43 @@ def fetch_url_content(url):
 
 def extract_main_content(html):
     soup = BeautifulSoup(html, 'html.parser')
-    # Example: Extract text from main article section
-    content = soup.get_text()
-    return content
-def summarize_content(url, provider_role, specialty, age_group, disease_interest, drug_interest, additional_keywords=None):
-    try:
-        # Fetch and extract content from URL
-        content = extract_main_content(fetch_url_content(url)) 
-        
-        if not content:
-            return "Error: No content found at the provided URL."
-        
-        # Ensure API key is available
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            return "Error: OpenAI API key not found."
-        
-        client = OpenAI(api_key=api_key)
+    return soup.get_text()  # Extract text from the entire HTML document
 
-        # Build user-specific context for summarization
-        user_context = (
-            f"You are summarizing this for a {provider_role}. "
-            f"The specialty of interest is {specialty}. "
-            f"Focus on patients in the {age_group} age group if possible. "
-            f"Highlight key findings about the disease of interest if possible: {disease_interest}. "
-            f"Discuss findings related to drug interest if possible: {drug_interest}. "
-        )
-        
-        # Append additional context keywords if provided
-        if additional_keywords:
-            keywords_str = ", ".join(additional_keywords)
-            user_context += f" Additional context keywords: {keywords_str}."
-        
-        # Create the OpenAI completion request
-        completion = client.chat.completions.create(
-            model="gpt-4",  # Use the correct model name
+def summarize_content(url, disease_interest, drug_interest):
+    # Fetch content from URL
+    content = fetch_url_content(url)
+    if not content:
+        return "Failed to fetch content from the URL."
+    
+    content = extract_main_content(fetch_url_content(url))
+
+    # Set OpenAI API key
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not openai.api_key:
+        raise ValueError("OpenAI API key is not set. Check your .env file.")
+
+    # Build user-specific context for summarization
+    user_context = (
+        f"Highlight key findings about the disease of interest: {disease_interest}. "
+        f"Discuss findings related to drug interest: {drug_interest}."
+    )
+
+    try:
+        # Generate completion
+        completion = openai.ChatCompletion.create(
+            model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are an assistant that summarizes research papers efficiently."},
-                {"role": "user", "content": f"{user_context} Here is the content of a research paper that I would like summarized: {content}"}
+                {"role": "system", "content": "You are an assistant that summarizes research papers efficiently for clinicians."},
+                {
+                    "role": "user",
+                    "content": f"{user_context} Here is the content of a research paper that I would like summarized: {content}."
+                }
             ]
         )
-        
-        # Return the summary content from the API response
         return completion.choices[0].message.content
-    
-    except Exception as e:
-        return f"An error occurred while summarizing the content: {str(e)}"
+    except Exception as e:  # Catch all exceptions
+        print(f"OpenAI API error: {e}")
+        return f"An error occurred: {e}"
+
+

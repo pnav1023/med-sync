@@ -64,6 +64,9 @@ try:
         st.title("Personal Input Page")
         st.session_state.diseases_of_interest = st.text_input("Enter diseases of interest:")
         st.session_state.drugs_of_interest = st.text_input("Enter drugs of interest:")
+
+        
+        
         
         if st.button("Fetch Updates"):
             with st.spinner("Fetching updates..."):
@@ -97,29 +100,75 @@ try:
             st.session_state.current_page = "Results Page"
 
     elif st.session_state.current_page == "Results Page":
-        st.title("Results")
+        st.title("Home Page")
         st.write("View the latest updates tailored to your interests.")
 
         tabs = st.tabs(["Academic Research", "Clinical Trials", "Clinical News", "Regulatory News", "Provider News", "Drug News"])
 
-        # Academic Research Tab
         with tabs[0]:
-            st.header("Academic Research")
-            for article in st.session_state.academic_research:
-                with st.expander(article['Title']):
-                    st.write(f"[Read More]({article['URL']})")
+            
+            for i, article in enumerate(st.session_state.academic_research):
+                if isinstance(article, dict):
+                    with st.expander(article['Title']):
+                        # Article metadata and URL link inside the dropdown
+                        col1, col2, col3, col4 = st.columns([1, 1, 4, 1])
+                        
+                        with col1:
+                            st.write(f"Source: {article['Source']}")
+                        
+                        with col2:
+                            authors_formatted = [author["name"] for author in article["Authors"]]
+                            st.write(f"Authors: {', '.join(authors_formatted)}")
+                        
+                        with col3:
+                            st.write(f"Published: {article['PubDate']}")
+                        
+                        with col4:
+                            st.write(f"[Read More]({article['URL']})")  # Displaying the URL link
+
+                        # Now, place the buttons inside the dropdown as well
+                        col5, col6 = st.columns([7, 1])
+                        with col5:
+                            if st.button(f"Get AI summary", key=f"ai_summary_{i}"):
+                                with st.spinner("Generating AI summary..."):
+                                    try:
+                                        # Assuming 'summarize_content' function is already defined to generate summaries
+                                        st.write(
+                                            summarize_content(
+                                                article["URL"],
+                                                disease_interest=st.session_state.diseases_of_interest,
+                                                drug_interest=st.session_state.drugs_of_interest,
+                                            )
+                                        )
+                                    except Exception as e:
+                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                        
+                        with col6:
+                            st.button(f"Save Article", key=f"save_article_{i}")  # Placeholder for Save Article button
+
+                else:
+                    st.write(f"Article {i} is NOT a dictionary: {type(article)}")
+                    continue  # Skip this article if it's not a dictionary
+
+
+
 
         # Clinical Trials Tab
         with tabs[1]:
-            st.header("Clinical Trials")
+
+            # Check if the clinical_trials DataFrame is not empty
             if not st.session_state.clinical_trials.empty:
-                st.dataframe(st.session_state.clinical_trials)
+                # Use the DataFrame from session state
+                df_trials = st.session_state.clinical_trials
+                
+                # Display the entire dataframe in a scrollable table
+                st.dataframe(df_trials)  # This will render a scrollable table with all the fields
+                
             else:
-                st.write("No clinical trials found.")
+                st.warning("No clinical trials found for this search.")
 
         # Industry News Tab
         with tabs[2]:
-            st.header("Clinical News")
             
             # Get user inputs for filtering
             diseases_of_interest = st.session_state.diseases_of_interest.lower()
@@ -149,7 +198,6 @@ try:
         
         # Industry News Tab
         with tabs[3]:
-            st.header("Regulatory News")
             
             # Get user inputs for filtering
             diseases_of_interest = st.session_state.diseases_of_interest.lower()
@@ -177,7 +225,6 @@ try:
         
         # Industry News Tab
         with tabs[4]:
-            st.header("Provider News")
             
             # Get user inputs for filtering
             diseases_of_interest = st.session_state.diseases_of_interest.lower()
@@ -205,7 +252,6 @@ try:
         
         # Industry News Tab
         with tabs[5]:
-            st.header("Drug News")
             
             # Get user inputs for filtering
             diseases_of_interest = st.session_state.diseases_of_interest.lower()
