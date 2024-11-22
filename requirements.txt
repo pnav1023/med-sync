@@ -4,3 +4,11 @@ openai
 python-dotenv
 beautifulsoup4
 lxml
+HTMLParser
+feedparser
+urllib
+pandas
+pytrials
+
+
+
