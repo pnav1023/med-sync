@@ -9,26 +9,38 @@
 ## 
 
 import feedparser
-import urllib.request
+import requests
 import streamlit as st
-
-# URL for MedPage Today RSS Feed
-RSS_URL = "https://www.medpagetoday.com/rss/headlines.xml"
 
 # Helper function to fetch and parse RSS feeds
 def fetch_rss_feed(rss_url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+    'Accept': 'application/rss+xml, application/xml;q=0.9, */*;q=0.8',
     }
     try:
-        request = urllib.request.Request(rss_url, headers=headers)
-        with urllib.request.urlopen(request) as response:
-            rss_data = response.read()
-        feed = feedparser.parse(rss_data)
-        if feed.bozo:
-            st.error("Error fetching the RSS feed.")
-            return []
-        return feed.entries
-    except Exception as e:
+        return _fetch_and_parse_feed(rss_url, headers)
+    except requests.exceptions.RequestException as e:
         st.error(f"An error occurred while fetching the RSS feed: {e}")
+        st.write(rss_url)
         return []
+
+
+# Function to fetch and parse the RSS feed
+def _fetch_and_parse_feed(rss_url, headers):
+    # Use requests to fetch the RSS feed
+    response = requests.get(rss_url, headers=headers, timeout=10)
+    response.raise_for_status()  # Raise HTTPError for bad responses (4xx, 5xx)
+    
+    
+    # Parse the RSS feed using feedparser
+    rss_data = response.content
+    feed = feedparser.parse(rss_data)
+
+    if feed.bozo:
+        st.error("Error parsing the RSS feed.")
+        return []
+    return feed.entries
+
+

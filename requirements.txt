@@ -9,6 +9,8 @@ feedparser
 urllib
 pandas
 pytrials
+datetime
+spellchecker
 
 
 
