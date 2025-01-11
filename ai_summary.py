@@ -20,7 +20,7 @@ def extract_main_content(html):
     soup = BeautifulSoup(html, 'html.parser')
     return soup.get_text()  # Extract text from the entire HTML document
 
-def summarize_content(url, disease_interest, drug_interest):
+def summarize_content(url, disease_interest, drug_interest, role, specialty, patient):
     # Fetch content from URL
     content = fetch_url_content(url)
     if not content:
@@ -38,6 +38,10 @@ def summarize_content(url, disease_interest, drug_interest):
     user_context = (
         f"Highlight key findings about the disease of interest: {disease_interest}. "
         f"Discuss findings related to drug interest: {drug_interest}."
+        f"The user's role is a {role}."
+        f"The user's specialty is {specialty}."
+        f"The user's patients are {patient}"
+        f"Please provide a 2-sentence key summary of the research paper, followed by 5 main bullet point takeaways."
     )
 
     try:
