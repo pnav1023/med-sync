@@ -8,25 +8,27 @@ import uuid
 
 
 
-#this is purely for display already implemented correct functionality in ui.py
-# Initialize the Supabase client
-URL = "https://liteepuobwwnfggrujwy.supabase.co"
-KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpdGVlcHVvYnd3bmZnZ3J1and5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTU5MjQsImV4cCI6MjA0ODc3MTkyNH0.AF_oj_BOaMuxINCKv-EhtMUAcqpUO_KI51NI6CfPzA4"
 
-# Initialize Supabase Client
-try:
-    supabase = create_client(URL, KEY)
-    print("Supabase client initialized successfully.")
-except Exception as e:
-    print(f"Error initializing Supabase client: {e}")
-    supabase = None
+def init_supabase_client() -> Client:
 
+    # Initialize the Supabase client
+    URL = "https://liteepuobwwnfggrujwy.supabase.co"
+    KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpdGVlcHVvYnd3bmZnZ3J1and5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTU5MjQsImV4cCI6MjA0ODc3MTkyNH0.AF_oj_BOaMuxINCKv-EhtMUAcqpUO_KI51NI6CfPzA4"
+
+    # Initialize Supabase Client
+    try:
+        client = create_client(URL, KEY)
+        print("Supabase client initialized successfully.")
+    except Exception as e:
+        print(f"Error initializing Supabase client: {e}")
+        client = None
+    return client
 
 
 
 
 # Sign-Up Function
-def sign_up(email: str, password: str):
+def sign_up(supabase: Client, email: str, password: str):
     try:
         # Call the sign-up method
         response = supabase.auth.sign_up({"email": email, "password": password})
@@ -51,7 +53,7 @@ def sign_up(email: str, password: str):
 
 
 
-def sign_in(email: str, password: str):
+def sign_in(supabase: Client, email: str, password: str):
     try:
         # Sign in with Supabase
         response = supabase.auth.sign_in_with_password({"email": email, "password": password})
@@ -72,7 +74,7 @@ def sign_in(email: str, password: str):
 
 
 
-def get_current_user():
+def get_current_user(supabase: Client):
     try:
         user_response = supabase.auth.get_user()
         if user_response.user:
@@ -163,7 +165,7 @@ def store_user_inputs(session_state):
 
     
     
-def save_article(user_id: str, article_id: str, title: str, notes: str, source: str) -> bool:
+def save_article(supabase: Client, user_id: str, article_id: str, title: str, notes: str, source: str) -> bool:
     try:
         data = {
             "user_id": user_id,
@@ -176,31 +178,29 @@ def save_article(user_id: str, article_id: str, title: str, notes: str, source: 
             "created_at": datetime.now().isoformat(),
         }
         response = supabase.table("saved_articles").insert(data).execute()
-        return response.status_code == 201
+        print(response)
+
     except Exception as e:
         print(f"Error saving article: {e}")
-        return False
+        
 
 
 
 
 
-def get_saved_articles(user_id: str):
-    if not is_valid_uuid(user_id):
-        print(f"Invalid user_id detected: {user_id}")
-        return []  # Return an empty list if the user_id is not valid.
+def get_saved_articles(supabase: Client, user_id: uuid.UUID):
+    # if not is_valid_uuid(user_id):
+    #     print(f"Invalid user_id detected: {user_id}")
+    #     return []  # Return an empty list if the user_id is not valid.
     
     try:
         print(f"Fetching saved articles for user_id: {user_id}")
         
         # Explicitly filtering by `user_id`
-        response = supabase.table("saved_articles").select("*").filter("user_id", "eq", str(user_id)).execute()
-        
-        # Check for any errors in the response
-        if response.error:
-            print(f"Supabase error: {response.error}")
-            return []
-        
+        # response = client.table("saved_articles").select("*").eq("user_id", user_id).execute()
+        response = supabase.table("saved_articles").select("*").eq("id", 8).execute()
+        #print("response: "+response)
+    
         # Return the fetched data if no errors
         return response.data
     
@@ -211,11 +211,18 @@ def get_saved_articles(user_id: str):
 
 
 
-
-
-
-
-
+if __name__ == "__main__":
+    
+    client = init_supabase_client()
+    
+    
+    
+    
+    
+    ##client = init_supabase_client()
+    ##user_id = uuid.UUID("8da178bf-fc0b-43bc-b2ad-3811202dfe7f")
+    ##articles = get_saved_articles(supabase=client, user_id=user_id)
+    ##print(articles)
 
 
 

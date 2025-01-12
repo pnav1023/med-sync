@@ -11,7 +11,7 @@ from spellchecker import SpellChecker
 import os
 from supabase import create_client, Client
 from datetime import datetime
-from database import sign_in, sign_up, get_saved_articles, save_article, store_user_inputs
+from database import sign_in, sign_up, get_saved_articles, save_article, store_user_inputs, init_supabase_client
 import asyncio
 from touch_up import HTMLStripper,strip_html, case_insensitive_match
 import re
@@ -22,12 +22,12 @@ import re
 st.set_page_config(page_title="Med Sync", layout="wide")
 
 # Initialize the Supabase client
-URL = "https://liteepuobwwnfggrujwy.supabase.co"
-KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpdGVlcHVvYnd3bmZnZ3J1and5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTU5MjQsImV4cCI6MjA0ODc3MTkyNH0.AF_oj_BOaMuxINCKv-EhtMUAcqpUO_KI51NI6CfPzA4"
+# URL = "https://liteepuobwwnfggrujwy.supabase.co"
+# KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpdGVlcHVvYnd3bmZnZ3J1and5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMxOTU5MjQsImV4cCI6MjA0ODc3MTkyNH0.AF_oj_BOaMuxINCKv-EhtMUAcqpUO_KI51NI6CfPzA4"
 
 if "supabase_client" not in st.session_state:
     try:
-        st.session_state.supabase_client = create_client(URL, KEY)
+        st.session_state.supabase_client = init_supabase_client()
         print("Supabase client initialized successfully.")
     except Exception as e:
         print(f"Error initializing Supabase client: {e}")
@@ -103,7 +103,7 @@ try:
 
                         if response.user:
                             # Log the user in automatically after sign-up
-                            user, access_token = sign_in(email, password)
+                            user, access_token = sign_in(st.session_state.supabase_client, email, password)
                             if user and access_token:
                                 st.write("Success! Press create account button again to proceed!")
                                 st.session_state.current_page = "Input Page"
@@ -458,7 +458,7 @@ try:
                 if is_valid_uuid(user_id):
                     try:
                         print(f"Retrieved user_id: {user_id}")  # Debug log
-                        saved_articles = get_saved_articles(user_id)
+                        saved_articles = get_saved_articles(st.session_state.supabase_client, user_id)
                         # Remaining code unchanged
                     except Exception as e:
                         st.write("An error occurred while fetching saved articles. Please try again later.")
@@ -544,27 +544,25 @@ try:
                                             source = article.get("Source", "Unknown Source")  # Default to "Unknown Source" if not provided
                                             
                                             # Call the updated save_article function
-                                            success = save_article(
+                                            save_article(
+                                                st.session_state.supabase_client,  # Supabase client from session state
                                                 user_id=st.session_state.user_id,  # User ID from session state
                                                 article_id=article.get("ID", f"article_{i}"),  # Unique article ID
                                                 title=article.get("Title", "Untitled Article"),  # Article title
                                                 notes="Optional notes here",  # Placeholder for notes
                                                 source=source  # Pass the source
                                             )
-                                            
-                                            # Check if the article was saved successfully to the database
-                                            if success:
-                                                # Update session state with the newly saved article
-                                                st.session_state.saved_articles.append({
-                                                    "article_id": article.get("ID", f"article_{i}"),
-                                                    "title": article.get("Title", "Untitled Article"),
-                                                    "notes": "Optional notes here",  # Or replace with actual notes
-                                                    "source": source,
-                                                    "saved_on": datetime.now().isoformat(),  # Track when it was saved
-                                                })
-                                                st.success("Article saved successfully!")
-                                            else:
-                                                st.error("Failed to save article. Please try again.")
+                                        
+                                            # Update session state with the newly saved article
+                                            st.session_state.saved_articles.append({
+                                                "article_id": article.get("ID", f"article_{i}"),
+                                                "title": article.get("Title", "Untitled Article"),
+                                                "notes": "Optional notes here",  # Or replace with actual notes
+                                                "source": source,
+                                                "saved_on": datetime.now().isoformat(),  # Track when it was saved
+                                            })
+                                            st.success("Article saved successfully!")
+                                          
                                         except Exception as e:
                                             st.error(f"An error occurred while saving the article: {str(e)}")
 
