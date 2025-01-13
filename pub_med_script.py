@@ -40,6 +40,7 @@ def search_pubmed(term, max_results):
                     "URL": f"https://pubmed.ncbi.nlm.nih.gov/{article_id}",
                     "Authors": article.get('authors', ['N/A']),
                     "PubType": article.get('pubtype', ['N/A']),
+                    "Abstract": article.get('abstract', 'Abstract not available.')
                 })
         return results
     else:

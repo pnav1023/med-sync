@@ -28,6 +28,8 @@
 5. Install project requirements:
    ```sh
    pip install -r requirements.txt
+   pip install pyspellchecker
+
    ```
 6. Start the streamlit app:
    ```sh
