@@ -165,7 +165,7 @@ def store_user_inputs(session_state):
         return False
     
     
-def save_article(supabase: Client, user_id: str, article_id: str, title: str, notes: str, source: str) -> bool:
+def save_article(supabase: Client, user_id: str, article_id: str, title: str, notes: str, source: str, article_url: str) -> bool:
     try:
         data = {
             "user_id": user_id,
@@ -173,6 +173,7 @@ def save_article(supabase: Client, user_id: str, article_id: str, title: str, no
             "title": title,
             "notes": notes,
             "source": source,  
+            "article_url": article_url,
             
             # Add datetime.utcnow().isoformat() if needed
             "created_at": datetime.now().isoformat(),

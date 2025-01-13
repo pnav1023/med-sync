@@ -61,18 +61,37 @@ if "current_page" not in st.session_state:
 
 if "user_id" not in st.session_state:
     st.session_state.user_id = None  # Track authenticated user ID
+    
+    
+# At the start of your app, add this to handle URL parameters (for password reset)
+try:
+    # Get all URL parameters
+    if "access_token" in st.query_params and "refresh_token" in st.query_params and "type" in st.query_params:
+        # This means we're coming from a password reset email
+        access_token = st.query_params["access_token"]
+        refresh_token = st.query_params["refresh_token"]
+        
+        # Set the session to use these tokens
+        supabase.auth.set_session(access_token, refresh_token)
+        
+        # Switch to reset password page
+        st.session_state.current_page = "Reset Password"
+        st.rerun()
+except Exception as e:
+    print(f"Error in recovery flow: {e}")
+
 
 ##pages###############################################################
 try:
     if st.session_state.current_page == "Welcome":
-        st.title("Welcome to Med Sync!")
+        st.title("Welcome to Kairos!")
         st.write("""
-            Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests.
-            With Med Sync, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results
-            to industry and regulatory news.
+            
+            In ancient Greek, "Kairos" symbolizes the perfect, opportune moment—a concept that embodies the mission of this app.
+            
+            Kairos keeps you ahead with real-time updates tailored to your specialty and interests. From clinical guidelines and research to trial results, industry trends, and regulatory news, you’ll have everything you need at your fingertips.
 
-            You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed on what matters to you. 
-            Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic so that you’re always on top of the latest developments in your field.
+            Personalize your feed, save articles, add notes, and filter by topic to stay on top of what truly matters. Stay informed, stay ready—welcome to Kairos.
         """)
 
         if st.button("Proceed to Sign in"):
@@ -85,10 +104,13 @@ try:
         st.write("Please sign in or create your account below:")
         
         # Authentication Section
-        auth_option = st.radio("Select an option:", ("Sign In", "Sign Up"))
+        auth_option = st.radio("Select an option:", ("Sign In", "Sign Up", "Forgot Password"))
         
-        email = st.text_input("Email", placeholder="Enter your email")
-        password = st.text_input("Password", type="password", placeholder="Enter your password")
+        if auth_option in ["Sign In", "Sign Up"]:
+            email = st.text_input("Email", placeholder="Enter your email")
+            password = st.text_input("Password", type="password", placeholder="Enter your password")
+
+    
         
         if auth_option == "Sign Up":
                 if st.button("Create Account"):
@@ -106,6 +128,7 @@ try:
                                     st.session_state.current_page = "Input Page"
                                     st.session_state.auth_session = access_token
                                     st.session_state.user_id = str(user.id)
+                                    st.rerun()
 
                                     if "auth_session" in st.session_state and st.session_state.auth_session:
                                         print("User is logged in.")
@@ -114,7 +137,7 @@ try:
                                     else:
                                         print("No user session found.")
                                 else:
-                                    st.error("Error logging in after account creation: " + str(access_token))
+                                    st.write("Please check your email, confirm, and sign up again")
                             elif response.error:
                                 if "already been taken" in response.error.message.lower():
                                     st.error("Email already exists. Please log in or reset your password.")
@@ -126,8 +149,52 @@ try:
                     else:
                         st.warning("Please provide both email and password.")
                     
-                    
-                    
+        elif auth_option == "Forgot Password":
+            reset_email = st.text_input("Email", placeholder="Enter your email")
+            if st.button("Reset Password"):
+                if reset_email:
+                    try:
+                        # Call Supabase password reset method
+                        response = supabase.auth.reset_password_email(reset_email)
+                        st.success("If an account exists with this email, you will receive password reset instructions.")
+                    except Exception as e:
+                        st.error(f"An error occurred: {str(e)}")
+                else:
+                    st.warning("Please enter your email address.")            
+        
+        
+        # Your existing page logic...
+        elif st.session_state.current_page == "Reset Password":
+            st.title("Reset Your Password")
+            new_password = st.text_input("New Password", type="password", placeholder="Enter your new password")
+            confirm_password = st.text_input("Confirm Password", type="password", placeholder="Confirm your new password")
+            
+            if st.button("Update Password"):
+                if new_password and confirm_password:
+                    if new_password == confirm_password:
+                        try:
+                            # Update the user's password
+                            response = supabase.auth.update_user({
+                                "password": new_password
+                            })
+                            
+                            if response.user:
+                                st.success("Password successfully updated! You can now sign in with your new password.")
+                                # Clear the session
+                                supabase.auth.sign_out()
+                                st.session_state.current_page = "Sign in"
+                                st.rerun()
+                            else:
+                                st.error("Error updating password. Please try again or request a new reset link.")
+                        except Exception as e:
+                            st.error(f"An error occurred: {str(e)}")
+                            print(f"Password reset error: {e}")  # For debugging
+                    else:
+                        st.error("Passwords do not match!")
+                else:
+                    st.warning("Please fill in both password fields.")
+                
+        
         ##
         elif auth_option == "Sign In":
             if st.button("Log In"):
@@ -225,7 +292,7 @@ try:
 
                                 st.session_state.diseases_of_interest = user_data.get('diseases')
                                 st.session_state.drugs_of_interest = user_data.get('drugs')
-                              
+                            
 
 
 
@@ -236,7 +303,7 @@ try:
                                 # If you need a search string, create it using session state variables
                                 search_string = f"{st.session_state.diseases_of_interest}, {st.session_state.drugs_of_interest}" 
 
-                                st.session_state.academic_research = search_pubmed(search_string, 15)
+                                st.session_state.academic_research = search_pubmed(search_string, 20)
                                 st.session_state.clinical_trials = fetch_clinical_trials(st.session_state.diseases_of_interest, st.session_state.drugs_of_interest)
 
 
@@ -305,6 +372,7 @@ try:
                         
                         if "auth_session" in st.session_state and st.session_state.auth_session:
                             print("User is logged in.")
+                            st.rerun()
                         else:
                             print("No user session found.")
                     else:
@@ -389,8 +457,8 @@ try:
         )
         
         # Existing Inputs
-        st.session_state.diseases_of_interest = st.text_input("Enter diseases of interest:")
-        st.session_state.drugs_of_interest = st.text_input("Enter drugs of interest (include all relevant names if possible):")
+        st.session_state.diseases_of_interest = st.text_input("Enter disease (only enter one) of interest:")
+        st.session_state.drugs_of_interest = st.text_input("Enter drug of interest (only enter one):")
         st.session_state.keywords = st.text_input("Enter keywords of interest (optional):")
         
         # Perform spell check on all input text
@@ -453,7 +521,7 @@ try:
                 with st.spinner("Fetching updates..."):
                     # Fetch Academic Research
                     search_string = f"{st.session_state.diseases_of_interest}, {st.session_state.drugs_of_interest}"
-                    st.session_state.academic_research = search_pubmed(search_string, 15)
+                    st.session_state.academic_research = search_pubmed(search_string, 20)
 
                     # Fetch Clinical Trials
                     drug = st.session_state.drugs_of_interest.split(",")[0] if st.session_state.drugs_of_interest else ""
@@ -504,6 +572,7 @@ try:
                     st.session_state.d_news3_entries = fetch_rss_feed(d_news3)
 
                 st.session_state.current_page = "Results Page"
+                st.rerun()
             
             
 
@@ -511,12 +580,12 @@ try:
 
 
     elif st.session_state.current_page == "Results Page":
-        st.title("Med Sync")
-        st.write("View the latest updates tailored to your interests.")
+        st.title("Kairos")
+        st.write("View the latest and most comprehensive medical updates tailored to your interests.")
 
         tabs = st.tabs(["Home Page", "Clinical Research and Trials", "Industry News", "Regulatory News", 
                         "Provider News & Education"
-                        , "Critical Alerts", "Settings", "Saved Articles", "Help & Info"])
+                        , "Critical Alerts", "Settings", "Saved Articles", "Help & Info", "Survey"])
 
         with tabs[0]:
             # Sample quick overview/dashboard for Home Page
@@ -525,76 +594,46 @@ try:
             # Display some basic stats or quick data
             st.subheader(f"Quick View of Your Feed (Updated {st.session_state.update_frequency}) ")
 
-            # Display metrics for each RSS feed
-            st.title("RSS Feed Updates")
-            st.subheader("Quick Stats on RSS Feeds")
+            st.subheader("Content Updates")
             
 
-            # Industry News
-            i_news1 = len(st.session_state.i_news1_entries)  # Industry News 1
-            i_news2 = len(st.session_state.i_news2_entries)  # Industry News 2
-            i_news3 = len(st.session_state.i_news3_entries)  # Industry News 3
-            i_news4 = len(st.session_state.i_news4_entries)  # Industry News 4
+            # Aggregating the counts for each section
+            industry_news_count = 20
 
-            # Regulatory News
-            r_news1 = len(st.session_state.r_news1_entries)  # Regulatory News 1
-            r_news2 = len(st.session_state.r_news2_entries)  # Regulatory News 2
-            r_news3 = len(st.session_state.r_news3_entries)  # Regulatory News 3
+            regulatory_news_count = len([
+                len(st.session_state.r_news1_entries),  # Regulatory News 1
+                len(st.session_state.r_news2_entries),  # Regulatory News 2
+                len(st.session_state.r_news3_entries),  # Regulatory News 3
+            ])
+
+            provider_news_count = sum([
+                len(st.session_state.p_news1_entries),  # Provider News 1
+                len(st.session_state.p_news2_entries),  # Provider News 2
+                len(st.session_state.p_news3_entries),  # Provider News 3
+            ])
+
+            drug_news_count = sum([
+                len(st.session_state.d_news1_entries),  # Drug News 1
+                len(st.session_state.d_news2_entries),  # Drug News 2
+                len(st.session_state.d_news3_entries),  # Drug News 3
+            ])
+
+            # Displaying the metrics in expandable sections
+            with st.expander("Clinical Research"):
+                st.metric("Total Articles", f"{industry_news_count} Articles")
+                
+            with st.expander("Regulatory News"):
+                ##st.metric("Total Articles", f"{regulatory_news_count} Articles")
+                st.write("Please view tab for articles")
             
-            #Provider News
-            p_news1 = len(st.session_state.p_news1_entries)  # Provider News 1
-            p_news2 = len(st.session_state.p_news2_entries)  # Provider News 2
-            p_news3 = len(st.session_state.p_news3_entries)  # Provider News 3
-
-            # Drug News (now under Provider News)
-            d_news1 = len(st.session_state.d_news1_entries)  # Drug News 1
-            d_news2 = len(st.session_state.d_news2_entries)  # Drug News 2
-            d_news3 = len(st.session_state.d_news3_entries)  # Drug News 3
-
-            # Display the metrics in a grid format grouped by category
-
-            col1, col2, col3, col4 = st.columns(4)
-
-            # Industry News Group
-            with col1:
-                st.metric("Industry News 1", i_news1)
-            with col2:
-                st.metric("Industry News 2", i_news2)
-            with col3:
-                st.metric("Industry News 3", i_news3)
-            with col4:
-                st.metric("Industry News 4", i_news4)
-
-            col5, col6, col7 = st.columns(3)
-
-            # Regulatory News Group (with Provider News inside it)
-            with col5:
-                st.metric("Regulatory News 1", r_news1)
-            with col6:
-                st.metric("Regulatory News 2", r_news2)
-            with col7:
-                st.metric("Regulatory News 3", r_news3)
-
-            col8, col9, col10 = st.columns(3)
-
-            # Provider News Group (with Drug News inside it)
-            with col8:
-                st.metric("Provider News 1", p_news1)
-            with col9:
-                st.metric("Provider News 2", p_news2)
-            with col10:
-                st.metric("Provider News 3", p_news3)
-
-            col11, col12, col13 = st.columns(3)
-
-            # Drug News Group
-            with col11:
-                st.metric("Drug News 1", d_news1)
-            with col12:
-                st.metric("Drug News 2", d_news2)
-            with col13:
-                st.metric("Drug News 3", d_news3)
-
+            with st.expander("Provider News"):
+                ##st.metric("Total Articles", f"{provider_news_count} Articles")
+                st.write("Please view tab for articles")
+                
+            with st.expander("Drug Alerts"):
+                ##st.metric("Total Articles", f"{drug_news_count} Articles")
+                st.write("Please view tab for articles")
+    
             # Display recently saved articles or other relevant info
             st.subheader("Recent Activity")
             
@@ -634,7 +673,7 @@ try:
                         reverse=True
                     )
                     for article in sorted_articles[:5]:  # Show last 5 saved articles
-                        st.write(f"- {article.get('title', 'Untitled')} (Saved on {article.get('saved_on', 'Unknown')})")
+                        st.write(f"- {article.get('title', 'Untitled')}")
                 except Exception as e:
                     st.write("An error occurred while displaying saved articles.")
                     print(f"Error displaying saved articles: {e}")
@@ -652,69 +691,101 @@ try:
 
             # Sub-Tab 1: Academic Research
             with sub_tabs[0]:
-                for i, article in enumerate(st.session_state.academic_research):
+                
+                
+                st.subheader("Sort Articles by Publication Date")
+    
+                # Sorting options
+                sort_option = st.radio(
+                    "Sort by:",
+                    options=["Most Recent", "Least Recent"],
+                    horizontal=True
+                )
+                
+                # Function to safely parse PubDate
+                def parse_pubdate(pubdate):
+                    try:
+                        # Attempt to parse with complete date format
+                        return datetime.strptime(pubdate, "%Y %b %d")
+                    except ValueError:
+                        try:
+                            # If the day is missing, attempt to parse with only year and month
+                            return datetime.strptime(pubdate, "%Y %b")
+                        except ValueError:
+                            # If it still doesn't work, return a very early date (datetime.min)
+                            return datetime.min
+
+                # Sort articles based on PubDate
+                sorted_articles = sorted(
+                    st.session_state.academic_research,
+                    key=lambda article: parse_pubdate(article.get("PubDate", None) if isinstance(article, dict) else ""),
+                    reverse=(sort_option == "Most Recent")  # Reverse for most recent
+                )
+                
+                st.write(f"Showing articles sorted by **{sort_option}**.")
+
+                # Display sorted articles
+                for i, article in enumerate(sorted_articles):
                     if isinstance(article, dict):
                         with st.expander(article['Title']):
-                            # Article metadata and URL link inside the dropdown
-                            col1, col2, col3 = st.columns([3, 4, 1])
-                            
+                            # Adjusted column ratios for better spacing
+                            col1, col2, col3 = st.columns([2, 2, 1])
+
                             with col1:
                                 st.write(f"**Source:** {article['Source']}")
-                            
+
                             with col2:
                                 st.write(f"**Published:** {article['PubDate']}")
-                            
+
                             with col3:
                                 st.write(f"[Read More]({article['URL']})")  # Displaying the URL link
-                            
+
+                            st.write("---")  # Adding a separator for better visual organization
 
                             # Buttons inside the dropdown
-                            col5, col6 = st.columns([7, 1])
+                            col5, col6 = st.columns([5, 1])
                             with col5:
                                 if st.button(f"Get AI summary", key=f"ai_summary_{i}"):
                                     with st.spinner("Generating AI summary..."):
                                         try:
-                                            # Assuming 'summarize_content' function is already defined to generate summaries
                                             st.write(
                                                 summarize_content(
                                                     article["URL"],
                                                     disease_interest=st.session_state.diseases_of_interest,
                                                     drug_interest=st.session_state.drugs_of_interest,
-                                                    role = st.session_state.role,
-                                                    specialty = st.session_state.specialty,
-                                                    patient = st.session_state.patient_demographics
+                                                    role=st.session_state.role,
+                                                    specialty=st.session_state.specialty,
+                                                    patient=st.session_state.patient_demographics
                                                 )
                                             )
                                         except Exception as e:
                                             st.error(f"An error occurred while fetching AI summary: {str(e)}")
-                            
+
                             with col6:
                                 if st.button(f"Save Article", key=f"save_article_{i}"):
                                     with st.spinner("Saving article..."):
                                         try:
-                                            # Fetching the source field (assuming it's part of the article dictionary)
-                                            source = article.get("Source", "Unknown Source")  # Default to "Unknown Source" if not provided
-                                            
-                                            # Call the updated save_article function
+                                            source = article.get("Source", "Unknown Source")
                                             save_article(
-                                                st.session_state.supabase_client,  # Supabase client from session state
-                                                user_id=st.session_state.user_id,  # User ID from session state
-                                                article_id=article.get("ID", f"article_{i}"),  # Unique article ID
-                                                title=article.get("Title", "Untitled Article"),  # Article title
-                                                notes="Optional notes here",  # Placeholder for notes
-                                                source=source  # Pass the source
+                                                st.session_state.supabase_client,
+                                                user_id=st.session_state.user_id,
+                                                article_id=article.get("ID", f"article_{i}"),
+                                                title=article.get("Title", "Untitled Article"),
+                                                notes=article.get("notes"),
+                                                source=article.get("Source"),
+                                                article_url=article.get("URL")
                                             )
-                                        
-                                            # Update session state with the newly saved article
+
                                             st.session_state.saved_articles.append({
                                                 "article_id": article.get("ID", f"article_{i}"),
                                                 "title": article.get("Title", "Untitled Article"),
-                                                "notes": "Optional notes here",  # Or replace with actual notes
+                                                "notes": article.get("notes"),
                                                 "source": source,
-                                                "saved_on": datetime.now().isoformat(),  # Track when it was saved
+                                                "article_url": article.get("URL"),
+                                                "saved_on": datetime.now().isoformat(),
                                             })
                                             st.success("Article saved successfully!")
-                                          
+
                                         except Exception as e:
                                             st.error(f"An error occurred while saving the article: {str(e)}")
 
@@ -722,9 +793,9 @@ try:
                         st.write(f"Article {i} is NOT a dictionary: {type(article)}")
                         continue  # Skip this article if it's not a dictionary
 
+
+
             # Sub-Tab 2: Clinical Trials
-
-
             with sub_tabs[1]:
                 # Check if the clinical_trials DataFrame is not empty
                 if not st.session_state.clinical_trials.empty:
@@ -902,29 +973,85 @@ try:
             
             # Display results
             if tagged_entries:
-                for tagged_entry in tagged_entries:
+                for i, tagged_entry in enumerate(tagged_entries):
                     entry = tagged_entry["entry"]
                     color = tagged_entry["color"]
                     match_count = tagged_entry["match_count"]
 
-                    # Use Streamlit components to display the entry
+                    # Generate a unique key for each article
+                    article_key = entry.get("id", f"article_{i}")
+
+                    # Display the article details in an expander
                     with st.expander(f"{entry.get('title', 'No Title')} ({match_count} matches)"):
-                        # HTML for a colored circle in the top-right corner
-                        st.markdown(
-                            f"""
-                            <div style="position: relative; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-                                <div style="position: absolute; top: 5px; right: 5px; width: 15px; height: 15px; 
-                                            background-color: {color}; border-radius: 50%;"></div>
-                                <div style="margin-top: 10px;">
-                                    <p>{strip_html(entry.get('summary', 'No Summary'))}</p>
-                                    <a href="{entry.get('link', '#')}" target="_blank">Read More</a>
-                                </div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
+                        # Article metadata layout
+                        col1, col2, col3 = st.columns([2, 3, 1])
+
+                        with col1:
+                            st.write(f"**Source:** {entry.get('source', 'Unknown Source')}")
+
+                        with col2:
+                            st.write(f"**Summary:** {strip_html(entry.get('summary', 'No Summary'))}")
+
+                        with col3:
+                            # A colored indicator for match relevance
+                            st.markdown(
+                                f"""
+                                <div style="background-color: {color}; width: 15px; height: 15px; border-radius: 50%;"></div>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+
+                        st.write(f"[Read Full Article]({entry.get('link', '#')})", unsafe_allow_html=True)
+
+                        # Buttons for summarization and saving
+                        col4, col5 = st.columns(2)
+
+                        with col4:
+                            if st.button("Get AI Summary", key=f"ai_summary_{article_key}"):
+                                with st.spinner("Generating AI summary..."):
+                                    try:
+                                        summary = summarize_content(
+                                            entry.get("link", ""),
+                                            disease_interest=st.session_state.diseases_of_interest,
+                                            drug_interest=st.session_state.drugs_of_interest,
+                                            role=st.session_state.role,
+                                            specialty=st.session_state.specialty,
+                                            patient=st.session_state.patient_demographics,
+                                        )
+                                        st.write(summary)
+                                    except Exception as e:
+                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+
+                        with col5:
+                            if st.button("Save Article", key=f"save_article_{article_key}"):
+                                with st.spinner("Saving article..."):
+                                    try:
+                                        source = entry.get("source", "Unknown Source")
+                                        save_article(
+                                            st.session_state.supabase_client,
+                                            user_id=st.session_state.user_id,
+                                            article_id=entry.get("id", article_key),
+                                            title=entry.get("title", "Untitled Article"),
+                                            notes=entry.get("notes"),
+                                            source=source,
+                                            article_url=entry.get("link", "#"),
+                                        )
+
+                                        st.session_state.saved_articles.append({
+                                            "article_id": entry.get("id", article_key),
+                                            "title": entry.get("title", "Untitled Article"),
+                                            "notes": entry.get("notes"),
+                                            "source": source,
+                                            "article_url": entry.get("link", "#"),
+                                            "saved_on": datetime.now().isoformat(),
+                                        })
+                                        st.success("Article saved successfully!")
+                                    except Exception as e:
+                                        st.error(f"An error occurred while saving the article: {str(e)}")
+
             else:
                 st.write("No relevant news articles found based on your input.")
+
 
 
         
@@ -940,7 +1067,7 @@ try:
             # Combine entries
             combined_entries = st.session_state.r_news1_entries + st.session_state.r_news2_entries + st.session_state.r_news3_entries
 
-
+            
             # Filter RSS entries based on diseases, drugs, specialty, and keywords using OR logic
             filtered_rss2_entries = [
                 entry for entry in combined_entries
@@ -957,14 +1084,68 @@ try:
                     case_insensitive_match(keywords, entry.get('summary', ''))
                 )
             ]
+            
+            
             # Display filtered results or a message if no matches
             if filtered_rss2_entries:
-                for entry in filtered_rss2_entries:
-                    with st.expander(entry.get('title', 'No Title')):
-                        summary_html = entry.get('summary', 'No Summary')
-                        plain_summary = strip_html(summary_html)
-                        st.write(plain_summary)
-                        st.write(f"[Read More]({entry.get('link', '#')})")
+                for i, entry in enumerate(filtered_rss2_entries):
+                    # Generate a unique key by combining index with title or link
+                    unique_key = f"entry_{i}_{entry.get('title', '')[:10]}"
+
+                    with st.expander(f"{entry.get('title', 'No Title')}"):
+                        # Article metadata layout
+                        col1, col2 = st.columns([4, 1])
+
+                        with col1:
+                            st.write(f"**Source:** {entry.get('source', 'Unknown Source')}")
+                            summary_html = entry.get("summary", "No Summary")
+                            plain_summary = strip_html(summary_html)
+                            st.write(plain_summary)
+                            st.markdown(
+                                f"[Read More]({entry.get('link', '#')})", unsafe_allow_html=True
+                            )
+
+                        with col2:
+                            if st.button("Get AI Summary", key=f"ai_summary_{unique_key}"):
+                                with st.spinner("Generating AI summary..."):
+                                    try:
+                                        summary = summarize_content(
+                                            entry.get("link", ""),
+                                            disease_interest=st.session_state.diseases_of_interest,
+                                            drug_interest=st.session_state.drugs_of_interest,
+                                            role=st.session_state.role,
+                                            specialty=st.session_state.specialty,
+                                            patient=st.session_state.patient_demographics,
+                                        )
+                                        st.write(summary)
+                                    except Exception as e:
+                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+
+                            if st.button("Save Article", key=f"save_article_{unique_key}"):
+                                with st.spinner("Saving article..."):
+                                    try:
+                                        source = entry.get("source", "Unknown Source")
+                                        save_article(
+                                            st.session_state.supabase_client,
+                                            user_id=st.session_state.user_id,
+                                            article_id=entry.get("id", unique_key),
+                                            title=entry.get("title", "Untitled Article"),
+                                            notes=entry.get("notes"),
+                                            source=source,
+                                            article_url=entry.get("link", "#"),
+                                        )
+
+                                        st.session_state.saved_articles.append({
+                                            "article_id": entry.get("id", unique_key),
+                                            "title": entry.get("title", "Untitled Article"),
+                                            "notes": entry.get("notes"),
+                                            "source": source,
+                                            "article_url": entry.get("link", "#"),
+                                            "saved_on": datetime.now().isoformat(),
+                                        })
+                                        st.success("Article saved successfully!")
+                                    except Exception as e:
+                                        st.error(f"An error occurred while saving the article: {str(e)}")
             else:
                 st.write("No relevant news articles found based on your input.")
         
@@ -1002,14 +1183,70 @@ try:
 
             # Display filtered results or a message if no matches
             if filtered_rss3_entries:
-                for entry in filtered_rss3_entries:
-                    with st.expander(entry.get('title', 'No Title')):
-                        summary_html = entry.get('summary', 'No Summary')
-                        plain_summary = strip_html(summary_html)
-                        st.write(plain_summary)
-                        st.write(f"[Read More]({entry.get('link', '#')})")
+                for i, entry in enumerate(filtered_rss3_entries):
+                    # Generate a unique key by combining index with title or link
+                    unique_key = f"entry_{i}_{entry.get('title', '')[:10]}"
+
+                    with st.expander(entry.get("title", "No Title")):
+                        # Article metadata layout
+                        col1, col2 = st.columns([4, 1])
+
+                        with col1:
+                            summary_html = entry.get("summary", "No Summary")
+                            plain_summary = strip_html(summary_html)
+                            st.write(plain_summary)
+                            st.markdown(
+                                f"[Read More]({entry.get('link', '#')})", unsafe_allow_html=True
+                            )
+
+                        with col2:
+                            # Summarization button
+                            if st.button("Get AI Summary", key=f"ai_summary_{unique_key}"):
+                                with st.spinner("Generating AI summary..."):
+                                    try:
+                                        summary = summarize_content(
+                                            entry.get("link", ""),
+                                            disease_interest=st.session_state.diseases_of_interest,
+                                            drug_interest=st.session_state.drugs_of_interest,
+                                            role=st.session_state.role,
+                                            specialty=st.session_state.specialty,
+                                            patient=st.session_state.patient_demographics,
+                                        )
+                                        st.write(summary)
+                                    except Exception as e:
+                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+
+                            # Save article button
+                            if st.button("Save Article", key=f"save_article_{unique_key}"):
+                                with st.spinner("Saving article..."):
+                                    try:
+                                        source = entry.get("source", "Unknown Source")
+                                        save_article(
+                                            st.session_state.supabase_client,
+                                            user_id=st.session_state.user_id,
+                                            article_id=entry.get("id", unique_key),
+                                            title=entry.get("title", "Untitled Article"),
+                                            notes=entry.get("notes"),
+                                            source=source,
+                                            article_url=entry.get("link", "#"),
+                                        )
+
+                                        st.session_state.saved_articles.append({
+                                            "article_id": entry.get("id", unique_key),
+                                            "title": entry.get("title", "Untitled Article"),
+                                            "notes": entry.get("notes"),
+                                            "source": source,
+                                            "article_url": entry.get("link", "#"),
+                                            "saved_on": datetime.now().isoformat(),
+                                        })
+                                        st.success("Article saved successfully!")
+                                    except Exception as e:
+                                        st.error(f"An error occurred while saving the article: {str(e)}")
             else:
                 st.write("No relevant news articles found based on your input.")
+                
+                
+                
         
         # critical alerts
         with tabs[5]:
@@ -1044,14 +1281,68 @@ try:
 
             # Display filtered results or a message if no matches
             if filtered_rss4_entries:
-                for entry in filtered_rss4_entries:
+                for i, entry in enumerate(filtered_rss4_entries):
+                    # Generate a unique key for each entry
+                    unique_key = f"rss4_entry_{i}_{entry.get('title', '')[:10]}"
+
                     with st.expander(entry.get('title', 'No Title')):
-                        summary_html = entry.get('summary', 'No Summary')
-                        plain_summary = strip_html(summary_html)
-                        st.write(plain_summary)
-                        st.write(f"[Read More]({entry.get('link', '#')})")
+                        # Article metadata layout
+                        col1, col2 = st.columns([4, 1])
+
+                        with col1:
+                            # Display the summary and link
+                            summary_html = entry.get('summary', 'No Summary')
+                            plain_summary = strip_html(summary_html)
+                            st.write(plain_summary)
+                            st.markdown(f"[Read More]({entry.get('link', '#')})", unsafe_allow_html=True)
+
+                        with col2:
+                            # Summarization button
+                            if st.button("Get AI Summary", key=f"ai_summary_{unique_key}"):
+                                with st.spinner("Generating AI summary..."):
+                                    try:
+                                        summary = summarize_content(
+                                            entry.get("link", ""),
+                                            disease_interest=st.session_state.diseases_of_interest,
+                                            drug_interest=st.session_state.drugs_of_interest,
+                                            role=st.session_state.role,
+                                            specialty=st.session_state.specialty,
+                                            patient=st.session_state.patient_demographics,
+                                        )
+                                        st.write(summary)
+                                    except Exception as e:
+                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+
+                            # Save article button
+                            if st.button("Save Article", key=f"save_article_{unique_key}"):
+                                with st.spinner("Saving article..."):
+                                    try:
+                                        source = entry.get("source", "Unknown Source")
+                                        save_article(
+                                            st.session_state.supabase_client,
+                                            user_id=st.session_state.user_id,
+                                            article_id=entry.get("id", unique_key),
+                                            title=entry.get("title", "Untitled Article"),
+                                            notes=entry.get("notes"),
+                                            source=source,
+                                            article_url=entry.get("link", "#"),
+                                        )
+
+                                        # Add article to the saved articles list in session state
+                                        st.session_state.saved_articles.append({
+                                            "article_id": entry.get("id", unique_key),
+                                            "title": entry.get("title", "Untitled Article"),
+                                            "notes": entry.get("notes"),
+                                            "source": source,
+                                            "article_url": entry.get("link", "#"),
+                                            "saved_on": datetime.now().isoformat(),
+                                        })
+                                        st.success("Article saved successfully!")
+                                    except Exception as e:
+                                        st.error(f"An error occurred while saving the article: {str(e)}")
             else:
                 st.write("No relevant news articles found based on your input.")
+
 
         # critical alerts
         with tabs[6]:
@@ -1169,14 +1460,18 @@ try:
                         diseases_list = [d.strip() for d in diseases_of_interest.split(",") if d.strip()]
                         drugs_list = [d.strip() for d in drugs_of_interest.split(",") if d.strip()]
                         
+                        # Convert lists back to comma-separated strings for storage
+                        diseases_str = ", ".join(diseases_list)
+                        drugs_str = ", ".join(drugs_list)
+                        
                         data = {
                             "role": role.strip(),
                             "specialty": specialty.strip(),
                             "patients": patient_demographics.strip(),
                             "frequency": update_frequency.strip(),
                             "geography": geography.strip(),
-                            "diseases": diseases_list,
-                            "drugs": drugs_list,
+                            "diseases": diseases_str,
+                            "drugs": drugs_str,
                             "keywords": keywords.strip(),
                             "created_at": datetime.now().isoformat(),
                         }
@@ -1193,10 +1488,11 @@ try:
                         st.error(f"An error occurred while updating preferences: {e}")
                         print(f"Update error details: {str(e)}")  # For debugging
 
+
                     with st.spinner("Fetching new updates..."):
                         # Fetch Academic Research
                         search_string = f"{diseases_of_interest}, {drugs_of_interest}"
-                        st.session_state.academic_research = search_pubmed(search_string, 15)
+                        st.session_state.academic_research = search_pubmed(search_string, 20)
 
                         # Fetch Clinical Trials
                         drug = st.session_state.drugs_of_interest.split(",")[0] if st.session_state.drugs_of_interest else ""
@@ -1249,9 +1545,33 @@ try:
                         
 
                     st.session_state.current_page = "Results Page"
+                    st.rerun()
 
             
         with tabs[7]:
+            # Article Saving Section
+            
+            with st.container():
+            
+                st.markdown("""
+                    ### Add Clinical Notes
+                    Use this space to document:
+                    - Key findings relevant to your practice
+                    - Patient population this might benefit
+                    - Treatment considerations
+                    - Follow-up actions
+                """)
+                
+                # Create a shared notes input that will be used for saving to any article
+                shared_note = st.text_area(
+                    label="Clinical Notes",
+                    value="",
+                    height=150,
+                    placeholder="Enter your clinical observations, treatment implications, and follow-up plans...",
+                    key=f"shared_notes_input"
+                )
+
+            # Saved Articles Display Section
             st.title("Saved Articles")
 
             # Check if there are any saved articles
@@ -1259,38 +1579,100 @@ try:
                 st.subheader("Your Saved Articles")
                 
                 # Display saved articles
-                for article in st.session_state.saved_articles:
+                for saved_index, article in enumerate(st.session_state.saved_articles):
                     with st.expander(article.get('title', 'Untitled Article')):
                         st.write(f"**Notes**: {article.get('notes', 'No notes added.')}")
                         st.write(f"**Source**: {article.get('source', 'Unknown Source')}")
                         
                         # Check if a valid link exists
-                        link = article.get('link')
+                        link = article.get('article_url') 
                         if link:
                             st.write(f"[Read more]({link})")
                         else:
                             st.write("No link available for this article.")
                         
-                        st.write(f"Saved on: {article.get('saved_on', 'Unknown')}")
-                        
-                        # Optionally add an option to remove or unsave an article
-                        if st.button(f"Remove {article.get('title', 'this article')}", key=f"remove_{article.get('id', '')}"):
-                            confirm = st.warning(f"Are you sure you want to remove '{article.get('title', 'this article')}'?")
-                            if st.button("Yes, remove"):
-                                try:
-                                    # Remove from Supabase
-                                    response = st.session_state.supabase_client.table("saved_articles").delete().eq("article_id", article_id).execute()
-                                    
-                                    if response.status_code == 200:
-                                        # Successfully deleted from Supabase, now remove from session state
-                                        st.session_state.saved_articles.remove(article)
-                                        st.success(f"Article '{article.get('title', 'this article')}' has been removed from saved articles.")
-                                        #st.experimental_rerun()  # Re-run to reflect the updated list
-                                    else:
-                                        st.error(f"Failed to remove the article from the database. Status: {response.status_code}")
-                                except Exception as e:
-                                    st.error(f"An error occurred while removing the article: {str(e)}")
+                        # Assuming `article.get('created_at', 'Unknown')` is an ISO 8601 string
+                        created_at = article.get('created_at', 'Unknown')
 
+                        # Check if the value is not 'Unknown' and format the timestamp
+                        if created_at != 'Unknown':
+                            # Convert to datetime object
+                            datetime_obj = datetime.fromisoformat(created_at)
+                            # Format it as "YYYY-MM-DD HH:MM AM/PM"
+                            formatted_time = datetime_obj.strftime("%Y-%m-%d %I:%M %p")
+                        else:
+                            formatted_time = 'Unknown'
+
+                        # Use the formatted time in your st.write statement
+                        st.write(f"Saved on: {formatted_time}")
+                        
+                        # Add Save Note button with unique key
+                        col1, col2, col3 = st.columns([2, 2, 1])
+                        
+                        with col1:
+                            save_note_key = f"save_note_btn_saved_{saved_index}_{article.get('article_id', '')}"
+                            if st.button("Save Note", key=save_note_key):
+                                try:
+                                    # Update note in Supabase
+                                    response = st.session_state.supabase_client.table("saved_articles") \
+                                        .update({"notes": shared_note}) \
+                                        .eq("article_id", article.get('article_id')) \
+                                        .execute()
+                                    
+                                    # Update note in session state
+                                    for saved_article in st.session_state.saved_articles:
+                                        if saved_article.get('article_id') == article.get('article_id'):
+                                            saved_article['notes'] = shared_note
+                                    
+                                    st.success("Note saved successfully!")
+                                    st.rerun()
+                                
+                                except Exception as e:
+                                    st.error(f"Error saving note: {str(e)}")
+                        
+                        # Removal functionality
+                        if "confirm_remove_state" not in st.session_state:
+                            st.session_state.confirm_remove_state = {}
+
+                        with col3:
+                            remove_key = f"remove_btn_saved_{saved_index}_{article.get('article_id', '')}"
+                            if st.button(f"Remove", key=remove_key):
+                                # Set confirmation state for this article ID
+                                st.session_state.confirm_remove_state[article.get('article_id')] = True
+
+                            # Show confirmation and cancel buttons only if the state is set
+                            if st.session_state.confirm_remove_state.get(article.get('article_id')):
+                                st.write("")  # Add spacing for better visual alignment
+                                # Create a horizontal layout for "Confirm" and "Cancel"
+                                confirm_col, cancel_col = st.columns([1, 1])  # Adjust width ratios if needed
+                                with confirm_col:
+                                    confirm_key = f"confirm_remove_saved_{saved_index}_{article.get('article_id', '')}"
+                                    if st.button("Confirm removal", key=confirm_key):
+                                        try:
+                                            # Remove from Supabase
+                                            response = st.session_state.supabase_client.table("saved_articles") \
+                                                .delete() \
+                                                .eq("article_id", article.get('article_id')) \
+                                                .execute()
+                                            
+                                            # Remove from session state
+                                            st.session_state.saved_articles = [
+                                                a for a in st.session_state.saved_articles 
+                                                if a.get('article_id') != article.get('article_id')
+                                            ]
+                                            st.success("Article removed successfully!")
+                                            st.session_state.confirm_remove_state.pop(article.get('article_id'), None)  # Clear state
+                                            st.rerun()
+                                        
+                                        except Exception as e:
+                                            st.error(f"Error removing article: {str(e)}")
+                                with cancel_col:
+                                    if st.button("Cancel", key=f"cancel_remove_{saved_index}_{article.get('article_id', '')}"):
+                                        # Reset the confirmation state for this article
+                                        st.session_state.confirm_remove_state.pop(article.get('article_id'), None)
+                                        st.rerun()
+
+                                            
             else:
                 st.write("You don't have any saved articles yet.")
                     
@@ -1301,61 +1683,62 @@ try:
                 st.title("Help and Information")
 
                 # Section for general information
-                st.header("Welcome to Med Sync!")
+                st.header("Welcome to Kairos!")
                 st.write("""
-                Med Sync is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests. 
-                With Med Sync, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results 
+                Kairos is designed to keep you up-to-date on the latest in healthcare, tailored specifically to your specialty and interests. 
+                With Kairos, you’ll receive real-time updates on everything from new clinical guidelines and research to clinical trial results 
                 to industry and regulatory news.
 
                 You can personalize what you see based on the diseases, drugs, or fields you’re most interested in, making it easier to stay informed 
-                on what matters to you. Plus, Med Sync lets you save articles, add personal notes, and quickly filter by specialty or topic 
+                on what matters to you. Plus, Kairos lets you save articles, add personal notes, and quickly filter 
                 so that you’re always on top of the latest developments in your field.
                 """)
 
                 # Instructions for use
-                st.header("How to Use Med Sync")
+                st.header("How to Use Kairos?")
                 st.write("""
                 1. **Personalize Your Feed**: Set your preferences based on your specialty, diseases, or drugs of interest in the settings section.
                 2. **Stay Informed**: Receive real-time updates on clinical guidelines, research, clinical trial results, and news relevant to your field.
                 3. **Save Articles**: When you find articles of interest, save them for future reference by clicking the 'Save' button.
-                4. **Add Personal Notes**: Add notes to saved articles to highlight important information or reminders.
-                5. **Filter by Specialty/Topic**: Quickly filter content by specialty or topic to ensure you're always viewing the most relevant information.
+                4. **Add Personal Notes**: Add notes to saved articles to highlight important information or reminders by typing in the text box
+                    and clicking the save note button 
+                5. **Filter by Specialty/Topic/Time**: Quickly filter content by specialty, time or topic to ensure you're always viewing the most relevant information.
                 """)
 
                 # FAQs section
-                st.header("Frequently Asked Questions")
-                st.write("""
-                **Q1: How can I personalize my feed?**  
-                A1: In the 'Settings' section, you can choose your specialty, diseases, or drugs of interest. Your feed will update based on these preferences.
+                ##st.header("Frequently Asked Questions")
+                ##st.write("""
+                ##**Q1: How can I personalize my feed?**  
+                ##A1: In the 'Settings' section, you can choose your specialty, diseases, or drugs of interest. Your feed will update based on these preferences.
 
-                **Q2: How do I save articles?**  
-                A2: When you come across an article you find useful, click the 'Save' button to keep it in your saved articles list.
+                ##**Q2: How do I save articles?**  
+                ##A2: When you come across an article you find useful, click the 'Save' button to keep it in your saved articles list.
 
-                **Q3: How can I add personal notes to articles?**  
-                A3: After saving an article, you can add your personal notes by clicking on the article and entering your thoughts in the provided note section.
+                ##**Q3: How can I add personal notes to articles?**  
+                ##A3: After saving an article, you can add your personal notes by clicking on the article and entering your thoughts in the provided note section.
 
-                **Q4: Can I filter content by specialty or topic?**  
-                A4: Yes! You can filter the articles and updates based on your chosen specialty or topic to quickly find the information that’s most relevant to you.
+                ##**Q4: Can I filter content by specialty or topic?**  
+                ##A4: Yes! You can filter the articles and updates based on your chosen specialty or topic to quickly find the information that’s most relevant to you.
 
-                **Q5: Will I receive notifications about updates?**  
-                A5: Yes, Med Sync sends push notifications to keep you updated on the latest research, guidelines, and news in your field.
-                """)
+                ##**Q5: Will I receive notifications about updates?**  
+                ##A5: Yes, Med Sync sends push notifications to keep you updated on the latest research, guidelines, and news in your field.
+                ##""")
 
                 # Contact information
                 st.header("Contact Us")
                 st.write("""
                 If you have any further questions or need assistance, feel free to reach out to us:
-                - **Email**: support@medsync.com
-                - **Phone**: 1-800-123-4567
-                - **Address**: 123 Health St, City, Country
+                - **Email**: krutinkumar@gmail.com
                 """)
 
                 # Disclaimer
                 st.header("Disclaimer")
                 st.write("""
-                Med Sync provides timely updates on healthcare topics but is not a substitute for professional medical advice. 
-                Always consult with your healthcare provider before making any clinical decisions.
+                Kairos provides timely updates on healthcare topics but is not a substitute for professional medical advice. 
                 """)
+        
+        with tabs[9]:
+            st.write("Please fill this survey out every week if possible to let us know how we can make your experience better: https://forms.gle/T1nbbina5jnaMK7o7")
 
 except Exception as e:
     st.error(f"An unexpected error occurred: {e}")
