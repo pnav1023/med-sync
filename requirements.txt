@@ -84,3 +84,4 @@ urllib3==2.2.3
 websockets==13.1
 yarl==1.18.3
 zope.interface==7.2
+python-dotenv==1.0.1
