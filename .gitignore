@@ -2,3 +2,5 @@
 __pycache__/*
 myenv/*
 venv/*
+pages/__pycache__/*
+utils/__pycache__/*
