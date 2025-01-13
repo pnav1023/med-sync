@@ -97,72 +97,72 @@ def is_valid_uuid(value):
 
 def store_user_inputs(session_state):
     try:
-        # Retrieve Supabase client from session state
+        # Get Supabase client
         supabase = session_state.get("supabase_client")
         if not supabase:
-            print("Supabase client not initialized.")
+            print("Error: Supabase client not found in session state")
             return False
 
-        # Debugging: Confirm Supabase client
-        print("Supabase client retrieved successfully.")
-
-        # Try to refresh the session and check if a valid session exists
+        # Get session
         try:
-            supabase.auth.refresh_session()  # Refresh the session
-            session = supabase.auth.get_session()  # Get the refreshed session
-            print("Session after refresh:", session)
+            session = supabase.auth.get_session()
+            print("Initial session:", session)
+            
+            if not session:
+                print("No session found, attempting refresh...")
+                session = supabase.auth.refresh_session()
+                print("Refreshed session:", session)
+            
+            # Handle Session object structure
+            if hasattr(session, 'user'):
+                user = session.user
+            elif isinstance(session, dict) and 'user' in session:
+                user = session['user']
+            else:
+                print("Error: Invalid session structure")
+                return False
+                
         except Exception as e:
-            print(f"Error refreshing session: {str(e)}")
+            print(f"Session error: {str(e)}")
             return False
 
-        if session and session.get("user"):
-            print("User is authenticated:", session["user"])
+        # Get user ID - handle both object and dict patterns
+        if hasattr(user, 'id'):
+            user_id = user.id
+        elif isinstance(user, dict) and 'id' in user:
+            user_id = user['id']
         else:
-            print("Session is invalid or missing user data.")
+            print("Error: Could not get user ID")
             return False
 
-        # Proceed with saving the user data if session is valid
-        user = session["user"]
-        user_id = user["id"]
-        print(f"User ID: {user_id}")
-
-        # Prepare data to be inserted into the 'user_inputs' table
+        # Prepare data
         data = {
             "user_id": user_id,
-            "role": session_state.role or "",
-            "specialty": session_state.specialty or "",
-            "patients": session_state.patient_demographics.strip() if session_state.patient_demographics else "",
-            "frequency": session_state.update_frequency or "Weekly",
-            "geography": session_state.geography.strip() if session_state.geography else "",
-            "diseases": session_state.diseases_of_interest or [],
-            "drugs": session_state.drugs_of_interest or [],
-            "keywords": session_state.keywords.strip() if session_state.keywords else "",
+            "role": getattr(session_state, 'role', ''),
+            "specialty": getattr(session_state, 'specialty', ''),
+            "patients": getattr(session_state, 'patient_demographics', '').strip(),
+            "frequency": getattr(session_state, 'update_frequency', 'Weekly'),
+            "geography": getattr(session_state, 'geography', '').strip(),
+            "diseases": getattr(session_state, 'diseases_of_interest', []),
+            "drugs": getattr(session_state, 'drugs_of_interest', []),
+            "keywords": getattr(session_state, 'keywords', '').strip(),
             "created_at": datetime.now().isoformat(),
         }
 
-        # Debugging: Log the prepared data
-        print("Data to be inserted into 'user_inputs':", data)
+        print("Attempting to insert data:", data)
 
-        # Insert data into the 'user_inputs' table
-        response = supabase.table("user_inputs").insert(data).execute()
-
-        # Debugging: Check response details
-        print("Insert response:", response)
-
-        # Verify insertion status
-        if response.status_code == 201:  # Status code 201 indicates success
-            print("Data inserted successfully into 'user_inputs'.")
+        # Insert data
+        try:
+            response = supabase.table("user_inputs").insert(data).execute()
+            print("Insert response:", response)
             return True
-        else:
-            print(f"Error inserting data. Status code: {response.status_code}, Response: {response.text}")
+        except Exception as e:
+            print(f"Insert error: {str(e)}")
             return False
 
     except Exception as e:
-        # Catch and log any unexpected errors
-        print(f"Error connecting to Supabase: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
         return False
-
-
     
     
 def save_article(supabase: Client, user_id: str, article_id: str, title: str, notes: str, source: str) -> bool:
@@ -197,10 +197,9 @@ def get_saved_articles(supabase: Client, user_id: uuid.UUID):
         print(f"Fetching saved articles for user_id: {user_id}")
         
         # Explicitly filtering by `user_id`
-        # response = client.table("saved_articles").select("*").eq("user_id", user_id).execute()
-        response = supabase.table("saved_articles").select("*").eq("id", 8).execute()
+        response = supabase.table("saved_articles").select("*").eq("user_id", user_id).execute()
         #print("response: "+response)
-    
+        print(response.data)
         # Return the fetched data if no errors
         return response.data
     

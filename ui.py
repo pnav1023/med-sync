@@ -94,59 +94,222 @@ try:
         password = st.text_input("Password", type="password", placeholder="Enter your password")
         
         if auth_option == "Sign Up":
-            if st.button("Create Account"):
-                if email and password:
-                    try:
-                        # Directly call the sign-up method
-                        response = supabase.auth.sign_up({"email": email, "password": password})
-                        print("Sign-up response:", response)  # Debugging line
+                if st.button("Create Account"):
+                    if email and password:
+                        try:
+                            # Directly call the sign-up method
+                            response = supabase.auth.sign_up({"email": email, "password": password})
+                            print("Sign-up response:", response)  # Debugging line
 
-                        if response.user:
-                            # Log the user in automatically after sign-up
-                            user, access_token = sign_in(st.session_state.supabase_client, email, password)
-                            if user and access_token:
-                                st.write("Success! Press create account button again to proceed!")
-                                st.session_state.current_page = "Input Page"
-                                st.session_state.auth_session = access_token
-                                st.session_state.user_id = str(user.id)
+                            if response.user:
+                                # Log the user in automatically after sign-up
+                                user, access_token = sign_in(st.session_state.supabase_client, email, password)
+                                if user and access_token:
+                                    st.write("Success! Press create account button again to proceed!")
+                                    st.session_state.current_page = "Input Page"
+                                    st.session_state.auth_session = access_token
+                                    st.session_state.user_id = str(user.id)
 
-                                if "auth_session" in st.session_state and st.session_state.auth_session:
-                                    print("User is logged in.")
-                                    print("Session state contains:", st.session_state)  # To confirm the session values
-                                    # Proceed with authenticated actions
+                                    if "auth_session" in st.session_state and st.session_state.auth_session:
+                                        print("User is logged in.")
+                                        print("Session state contains:", st.session_state)  # To confirm the session values
+                                        # Proceed with authenticated actions
+                                    else:
+                                        print("No user session found.")
                                 else:
-                                    print("No user session found.")
-                            else:
-                                st.error("Error logging in after account creation: " + str(access_token))
-                        elif response.error:
-                            if "already been taken" in response.error.message.lower():
-                                st.error("Email already exists. Please log in or reset your password.")
-                            else:
-                                st.error(response.error.message)
+                                    st.error("Error logging in after account creation: " + str(access_token))
+                            elif response.error:
+                                if "already been taken" in response.error.message.lower():
+                                    st.error("Email already exists. Please log in or reset your password.")
+                                else:
+                                    st.error(response.error.message)
 
-                    except Exception as e:
-                        st.error(f"An error occurred: {str(e)}")
-                else:
-                    st.warning("Please provide both email and password.")
+                        except Exception as e:
+                            st.error(f"An error occurred: {str(e)}")
+                    else:
+                        st.warning("Please provide both email and password.")
                     
                     
-
+                    
+        ##
         elif auth_option == "Sign In":
             if st.button("Log In"):
                 if email and password:
-                    user, access_token = sign_in(email, password)  # Returns user object and message
-                    if user and access_token:  # Check if user was returned
-                        st.session_state.user_id = str(user.id)  # Store the user ID in session
-                        st.session_state.auth_session = access_token  # Store the access token
-                        st.session_state.current_page = "Results Page"  # Redirect to the results page (or wherever you want)
+                    user, access_token = sign_in(st.session_state.supabase_client, email, password)
+                    if user and access_token:
+                        st.session_state.user_id = str(user.id)
+                        st.session_state.auth_session = access_token
+
+
+                        if 'supabase_client' not in st.session_state:
+                            st.session_state.supabase_client = None
+
+                        # Initialize data variables
+                        if 'role' not in st.session_state:
+                            st.session_state.role = ""
+                        if 'specialty' not in st.session_state:
+                            st.session_state.specialty = ""
+                        if 'patient_demographics' not in st.session_state:
+                            st.session_state.patient_demographics = ""
+                        if 'update_frequency' not in st.session_state:
+                            st.session_state.update_frequency = "Weekly"
+                        if 'geography' not in st.session_state:
+                            st.session_state.geography = ""
+                        if 'diseases_of_interest' not in st.session_state:
+                            st.session_state.diseases_of_interest = ""
+                        if 'drugs_of_interest' not in st.session_state:
+                            st.session_state.drugs_of_interest = ""
+                        if 'keywords' not in st.session_state:
+                            st.session_state.keywords = ""
+
+                        # Initialize Industry News
+                        if "i_news1_entries" not in st.session_state:
+                            st.session_state.i_news1_entries = []
+
+                        if "i_news2_entries" not in st.session_state:
+                            st.session_state.i_news2_entries = []
+
+                        if "i_news3_entries" not in st.session_state:
+                            st.session_state.i_news3_entries = []
+
+                        if "i_news4_entries" not in st.session_state:
+                            st.session_state.i_news4_entries = []
+
+                        # Initialize Regulatory News
+                        if "r_news1_entries" not in st.session_state:
+                            st.session_state.r_news1_entries = []
+
+                        if "r_news2_entries" not in st.session_state:
+                            st.session_state.r_news2_entries = []
+
+                        if "r_news3_entries" not in st.session_state:
+                            st.session_state.r_news3_entries = []
+
+                        # Initialize Provider News
+                        if "p_news1_entries" not in st.session_state:
+                            st.session_state.p_news1_entries = []
+
+                        if "p_news2_entries" not in st.session_state:
+                            st.session_state.p_news2_entries = []
+
+                        if "p_news3_entries" not in st.session_state:
+                            st.session_state.p_news3_entries = []
+
+                        # Initialize Drug News
+                        if "d_news1_entries" not in st.session_state:
+                            st.session_state.d_news1_entries = []
+
+                        if "d_news2_entries" not in st.session_state:
+                            st.session_state.d_news2_entries = []
+
+                        if "d_news3_entries" not in st.session_state:
+                            st.session_state.d_news3_entries = []
+
+
+                        # Fetch stored user inputs after successful login
+                        try:
+                            # Query the user_inputs table for this user's data
+                            response = st.session_state.supabase_client.table("user_inputs")\
+                                .select("*")\
+                                .eq("user_id", st.session_state.user_id)\
+                                .execute()
+
+                            if hasattr(response, 'data') and response.data:
+                                # Get the most recent entry (if there are multiple)
+                                user_data = response.data[-1]
+                                
+                                # Assign values to session state
+                                st.session_state.role = user_data.get('role', '')
+                                st.session_state.specialty = user_data.get('specialty', '')
+                                st.session_state.patient_demographics = user_data.get('patients', '')
+                                st.session_state.update_frequency = user_data.get('frequency', 'Weekly')
+                                st.session_state.geography = user_data.get('geography', '')
+                                # Assuming user_data.get('diseases', []) returns a list like: [",\"obesity,\""]
+
+                                st.session_state.diseases_of_interest = user_data.get('diseases')
+                                st.session_state.drugs_of_interest = user_data.get('drugs')
+                              
+
+
+
+                                st.session_state.keywords = user_data.get('keywords', '')
+                                
+                                print("User preferences loaded successfully")
+
+                                # If you need a search string, create it using session state variables
+                                search_string = f"{st.session_state.diseases_of_interest}, {st.session_state.drugs_of_interest}" 
+
+                                st.session_state.academic_research = search_pubmed(search_string, 15)
+                                st.session_state.clinical_trials = fetch_clinical_trials(st.session_state.diseases_of_interest, st.session_state.drugs_of_interest)
+
+
+                                # Fetch Industry News
+                                i_news1 = "https://www.pharmaceutical-business-review.com/drug-discovery/rss"
+                                st.session_state.i_news1_entries = fetch_rss_feed(i_news1)
+
+                                i_news2 = "https://www.biopharmadive.com/feeds/news/"
+                                st.session_state.i_news2_entries = fetch_rss_feed(i_news2)
+
+                                i_news3 = "https://www.statnews.com/category/pharma/feed/"
+                                st.session_state.i_news3_entries = fetch_rss_feed(i_news3)
+
+                                i_news4 = "https://www.medpagetoday.com/rss/headlines.xml"
+                                st.session_state.i_news4_entries = fetch_rss_feed(i_news4)
+
+                                # Fetch Regulatory News
+                                r_news1 = "https://thehill.com/policy/healthcare/feed/"
+                                st.session_state.r_news1_entries = fetch_rss_feed(r_news1)
+
+                                r_news2 = "https://edhub.ama-assn.org/rss/site_9/0_44020.xml"
+                                st.session_state.r_news2_entries = fetch_rss_feed(r_news2)
+
+                                r_news3 = "https://www.statnews.com/category/politics/feed/"
+                                st.session_state.r_news3_entries = fetch_rss_feed(r_news3)
+
+                                # Fetch Provider News
+                                p_news1 = "https://www.medpagetoday.com/rss/headlines.xml"
+                                st.session_state.p_news1_entries = fetch_rss_feed(p_news1)
+
+                                p_news2 = "https://edhub.ama-assn.org/rss/site_9/0_5672.xml"
+                                st.session_state.p_news2_entries = fetch_rss_feed(p_news2)
+
+                                p_news3 = "https://edhub.ama-assn.org/rss/site_9/0_44067.xml"
+                                st.session_state.p_news3_entries = fetch_rss_feed(p_news3)
+
+                                # Fetch Drug News
+                                d_news1 = "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml"
+                                st.session_state.d_news1_entries = fetch_rss_feed(d_news1)
+
+                                d_news2 = "https://jamanetwork.com/rss/site_9/0_42095.xml"
+                                st.session_state.d_news2_entries = fetch_rss_feed(d_news2)
+
+                                d_news3 = "https://www.biospace.com/FDA.rss"
+                                st.session_state.d_news3_entries = fetch_rss_feed(d_news3)
+
+
+                            else:
+                                # If no data found, initialize with empty values
+                                st.session_state.role = ""
+                                st.session_state.specialty = ""
+                                st.session_state.patient_demographics = ""
+                                st.session_state.update_frequency = "Weekly"
+                                st.session_state.geography = ""
+                                st.session_state.diseases_of_interest = ""
+                                st.session_state.drugs_of_interest = ""
+                                st.session_state.keywords = ""
+                                print("No stored preferences found for user")
+
+                        except Exception as e:
+                            print(f"Error loading user preferences: {str(e)}")
+                            st.error("There was an error loading your preferences")
+
+                        # After loading preferences, redirect to results page
+                        st.session_state.current_page = "Results Page"
                         
                         if "auth_session" in st.session_state and st.session_state.auth_session:
                             print("User is logged in.")
-                            # Proceed with authenticated actions
                         else:
                             print("No user session found.")
-
-                        
                     else:
                         st.error("Login failed. Please check your credentials.")
                 else:
@@ -272,6 +435,9 @@ try:
         if "auth_session" not in st.session_state or st.session_state.auth_session is None:
             st.error("No user session found. Ensure the user is logged in.")
             st.session_state.current_page = "Sign in"  # Redirect to Sign-in page
+
+
+
         else:
             # Proceed with the submit action only if the user is logged in
             if st.button("Submit"):
@@ -282,12 +448,12 @@ try:
 
                         # Call the store_user_inputs function to save the user inputs
                         
-                        ##success = store_user_inputs(st.session_state)
-                        ##if success:
-                            ##st.success("Your inputs have been saved successfully!")
-                            ##st.session_state.current_page = "Results Page"
-                        ##else:
-                            ##st.error("Failed to save your inputs. Please try again.")
+                        success = store_user_inputs(st.session_state)
+                        if success:
+                            st.success("Your inputs have been saved successfully!")
+                            st.session_state.current_page = "Results Page"
+                        else:
+                            st.error("Failed to save your inputs. Please try again.")
                     
                     # If no valid session is found, we request the user to log in
                     else:
@@ -458,7 +624,7 @@ try:
                 if is_valid_uuid(user_id):
                     try:
                         print(f"Retrieved user_id: {user_id}")  # Debug log
-                        saved_articles = get_saved_articles(st.session_state.supabase_client, user_id)
+                        st.session_state.saved_articles = get_saved_articles(st.session_state.supabase_client, user_id)
                         # Remaining code unchanged
                     except Exception as e:
                         st.write("An error occurred while fetching saved articles. Please try again later.")
@@ -995,9 +1161,9 @@ try:
                     if "geography" not in st.session_state:
                         st.session_state.geography = None
                     if "diseases_of_interest" not in st.session_state:
-                        st.session_state.diseases_of_interest = []
+                        st.session_state.diseases_of_interest = ""
                     if "drugs_of_interest" not in st.session_state:
-                        st.session_state.drugs_of_interest = []
+                        st.session_state.drugs_of_interest = ""
                     if "keywords" not in st.session_state:
                         st.session_state.keywords = None
 
@@ -1014,26 +1180,34 @@ try:
                     
                     
                     
-                    # Update database
                     try:
+                        # Clean the input data
+                        diseases_list = [d.strip() for d in diseases_of_interest.split(",") if d.strip()]
+                        drugs_list = [d.strip() for d in drugs_of_interest.split(",") if d.strip()]
+                        
                         data = {
-                            "role": role,
-                            "specialty": specialty,
+                            "role": role.strip(),
+                            "specialty": specialty.strip(),
                             "patients": patient_demographics.strip(),
-                            "frequency": update_frequency,
+                            "frequency": update_frequency.strip(),
                             "geography": geography.strip(),
-                            "diseases": diseases_of_interest.split(","),
-                            "drugs": drugs_of_interest.split(","),
+                            "diseases": diseases_list,
+                            "drugs": drugs_list,
                             "keywords": keywords.strip(),
                             "created_at": datetime.now().isoformat(),
                         }
+                        
                         response = supabase.table("user_inputs").update(data).eq("user_id", st.session_state.user_id).execute()
-                        if response.status_code == 200:
+                        
+                        if hasattr(response, 'data') and response.data:
                             st.success("Preferences updated successfully.")
                         else:
-                            st.error(f"Failed to update preferences: {response.error_message}")
+                            st.error("Failed to update preferences. Please try again.")
+                            print("Update response:", response)  # For debugging
+                            
                     except Exception as e:
                         st.error(f"An error occurred while updating preferences: {e}")
+                        print(f"Update error details: {str(e)}")  # For debugging
 
                     with st.spinner("Fetching new updates..."):
                         # Fetch Academic Research
