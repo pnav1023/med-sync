@@ -7,7 +7,6 @@ from pytrials.client import ClinicalTrials
 from rss import fetch_rss_feed
 from trials import fetch_clinical_trials
 from datetime import datetime
-from spellchecker import SpellChecker
 import os
 from supabase import create_client, Client
 from datetime import datetime
@@ -1057,8 +1056,6 @@ try:
         # critical alerts
         with tabs[6]:
                 st.title("Settings")
-                # Initialize spell checker
-                spell = SpellChecker()
 
                 # Role Input
                 role = st.selectbox(
