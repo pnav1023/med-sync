@@ -45,7 +45,7 @@ def summarize_content(url, disease_interest, drug_interest, role, specialty, pat
 
     try:
         # Generate completion
-        completion = client.chat.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an assistant that summarizes research papers efficiently for clinicians."},
