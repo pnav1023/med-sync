@@ -16,8 +16,6 @@ import asyncio
 from touch_up import HTMLStripper,strip_html, case_insensitive_match
 import re
 
-
-
 # Configure page settings
 st.set_page_config(page_title="Med Sync", layout="wide")
 
@@ -319,17 +317,6 @@ try:
 
     elif st.session_state.current_page == "Input Page":
         st.title("Personal Input Page")
-
-        # Initialize spell checker
-        spell = SpellChecker()
-
-        # Function to check for spelling errors
-        def check_spelling(text):
-            words = text.split()
-            misspelled = spell.unknown(words)
-            suggestions = {word: spell.correction(word) for word in misspelled}
-            return suggestions
-        
         
         st.session_state.role = st.selectbox(
             "Select your Role (Required):",
@@ -408,9 +395,9 @@ try:
         st.session_state.keywords = st.text_input("Enter keywords of interest (optional):")
         
         # Perform spell check on all input text
-        disease_suggestions = check_spelling(st.session_state.diseases_of_interest)
-        drug_suggestions = check_spelling(st.session_state.drugs_of_interest)
-        keyword_suggestions = check_spelling(st.session_state.keywords)
+        disease_suggestions = st.session_state.diseases_of_interest
+        drug_suggestions = st.session_state.drugs_of_interest
+        keyword_suggestions = st.session_state.keywords
 
         # Check if all required inputs are filled out
         if not all([st.session_state.role, st.session_state.specialty, st.session_state.update_frequency, 
