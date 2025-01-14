@@ -759,7 +759,7 @@ try:
                                                 )
                                             )
                                         except Exception as e:
-                                            st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                                            st.write(f"AI summary not available for this article")
 
                             with col6:
                                 if st.button(f"Save Article", key=f"save_article_{i}"):
