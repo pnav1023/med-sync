@@ -1020,7 +1020,7 @@ try:
                                         )
                                         st.write(summary)
                                     except Exception as e:
-                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                                        st.write(f"AI summary not available for this article")
 
                         with col5:
                             if st.button("Save Article", key=f"save_article_{article_key}"):
@@ -1119,7 +1119,7 @@ try:
                                         )
                                         st.write(summary)
                                     except Exception as e:
-                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                                        st.write(f"AI summary not available for this article")
 
                             if st.button("Save Article", key=f"save_article_{unique_key}"):
                                 with st.spinner("Saving article..."):
@@ -1214,7 +1214,7 @@ try:
                                         )
                                         st.write(summary)
                                     except Exception as e:
-                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                                        st.write(f"AI summary not available for this article")
 
                             # Save article button
                             if st.button("Save Article", key=f"save_article_{unique_key}"):
@@ -1311,7 +1311,7 @@ try:
                                         )
                                         st.write(summary)
                                     except Exception as e:
-                                        st.error(f"An error occurred while fetching AI summary: {str(e)}")
+                                        st.write(f"AI summary not available for this article")
 
                             # Save article button
                             if st.button("Save Article", key=f"save_article_{unique_key}"):
