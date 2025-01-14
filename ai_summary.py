@@ -1,9 +1,9 @@
+import openai
 import os
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 import requests
-from openai import OpenAI
-from dotenv import load_dotenv
+
 # Load environment variables
 load_dotenv()
 
@@ -29,9 +29,10 @@ def summarize_content(url, disease_interest, drug_interest, role, specialty, pat
     content = extract_main_content(fetch_url_content(url))
 
     # Set OpenAI API key
-    load_dotenv(override=True)
-
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    
+    if not openai.api_key:
+        raise ValueError("OpenAI API key is not set. Check your .env file.")
 
     # Build user-specific context for summarization
     user_context = (
@@ -45,7 +46,7 @@ def summarize_content(url, disease_interest, drug_interest, role, specialty, pat
 
     try:
         # Generate completion
-        completion = client.chat.completions.create(
+        completion = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[
                 {"role": "system", "content": "You are an assistant that summarizes research papers efficiently for clinicians."},
@@ -59,3 +60,5 @@ def summarize_content(url, disease_interest, drug_interest, role, specialty, pat
     except Exception as e:  # Catch all exceptions
         print(f"OpenAI API error: {e}")
         return f"An error occurred: {e}"
+
+
